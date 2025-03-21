@@ -1,8 +1,18 @@
 #!/bin/bash
 
-# Open the Termux app
-am start --user 0 -n com.termux/.TermuxActivity
-sleep 3  # Wait for Termux to load fully [[6]]
+# Function to display a colorful YouTube banner
+display_banner() {
+    echo -e "\e[31m████████╗ ██████╗ ██╗  ██╗███████╗███╗   ██╗\e[0m"  # Red
+    echo -e "\e[33m╚══██╔══╝██╔═══██╗██║ ██╔╝██╔════╝████╗  ██║\e[0m"  # Yellow
+    echo -e "\e[32m   ██║   ██║   ██║█████╔╝ █████╗  ██╔██╗ ██║\e[0m"  # Green
+    echo -e "\e[36m   ██║   ██║   ██║██╔═██╗ ██╔══╝  ██║╚██╗██║\e[0m"  # Cyan
+    echo -e "\e[34m   ██║   ╚██████╔╝██║  ██╗███████╗██║ ╚████║\e[0m"  # Blue
+    echo -e "\e[35m   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝\e[0m"  # Magenta
+    echo -e "\e[37mYouTube Downloader Bot v1.0 - Welcome!\e[0m"     # White
+}
+
+# Display the banner
+display_banner
 
 # Ensure script runs from its directory
 cd "$(dirname "$0")"
