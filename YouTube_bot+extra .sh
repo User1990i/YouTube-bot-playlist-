@@ -8,14 +8,14 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Trap Ctrl+C (SIGINT) to gracefully exit the bot
+trap 'echo "Exiting bot..."; exit 0' SIGINT [[2]]
+
 # Ensure yt-dlp is installed
 if ! command_exists yt-dlp; then
     echo "yt-dlp is not installed. Installing..."
     pkg update -y && pkg install yt-dlp -y
 fi
-
-# Trap Ctrl+C (SIGINT) to gracefully exit the bot
-trap 'echo "Exiting bot..."; exit 0' SIGINT
 
 # Function to download YouTube content
 download_content() {
@@ -86,6 +86,11 @@ show_menu() {
 # Set up Termux alias and key bindings for quick access
 if ! grep -q "alias ytbot=" ~/.bashrc; then
     echo "alias ytbot='bash ~/youtube_bot.sh'" >> ~/.bashrc
+fi
+
+# Enable line editing for bind to work
+if ! grep -q "set enable-bracketed-paste off" ~/.bashrc; then
+    echo "set enable-bracketed-paste off" >> ~/.bashrc
 fi
 
 # Bind Ctrl+Y to start the bot
