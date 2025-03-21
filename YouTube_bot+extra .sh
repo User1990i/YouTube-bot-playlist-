@@ -48,37 +48,53 @@ download_content() {
     echo "Download complete!"
 }
 
-# Function to download audio (FLAC)
-download_audio() {
-    read -p "Enter video URL: " url
-    download_content "$url" "bestaudio --extract-audio --audio-format flac" "/storage/emulated/0/Music/Songs" "flac"
-}
-
-# Function to download video
-download_video() {
-    read -p "Enter video URL: " url
-    download_content "$url" "best" "/storage/emulated/0/Videos" "mp4"
-}
-
 # Function to download a playlist
 download_playlist() {
     read -p "Enter playlist URL: " url
-    download_content "$url" "best" "/storage/emulated/0/Music/Playlists" "mp4"
-}
 
-# Function to convert video to GIF
-convert_to_gif() {
-    read -p "Enter video file path: " video
-    read -p "Enter start time (e.g., 00:00:05): " start
-    read -p "Enter duration (e.g., 5): " duration
-    ffmpeg -i "$video" -vf "fps=10,scale=320:-1:flags=lanczos" -t "$duration" "${video%.mp4}.gif"
-    echo "GIF created: ${video%.mp4}.gif"
-}
+    # Prompt user for format choice
+    echo "Select format:"
+    echo "1. FLAC (Audio)"
+    echo "2. MP4 (Video)"
+    read -p "Choose an option (1/2): " format_choice
 
-# Function to search YouTube
-youtube_search() {
-    read -p "Enter search query: " query
-    yt-dlp "ytsearch5:$query" --get-title --get-id
+    # Define output directory
+    local playlist_name=$(yt-dlp --flat-playlist --get-title "$url" | head -n 1 | tr -cd '[:alnum:]._- ')
+    local output_dir="/storage/emulated/0/Music/Songs/$playlist_name"
+
+    # Create the output directory
+    mkdir -p "$output_dir"
+
+    if [[ $format_choice == 1 ]]; then
+        # FLAC download
+        echo "Downloading playlist in FLAC format..."
+        yt-dlp -f "bestaudio --extract-audio --audio-format flac" --restrict-filenames --parse-metadata "title:%(title).50s" -o "$output_dir/%(title)s.flac" "$url"
+
+        # Prompt to merge audio
+        read -p "Merge audio files into one? (Y/N): " merge_choice
+        if [[ $merge_choice == "Y" || $merge_choice == "y" ]]; then
+            echo "Merging audio files..."
+
+            # Merge all FLAC files into one
+            local merged_file="$output_dir/${playlist_name}_Merged.flac"
+            find "$output_dir" -name "*.flac" -exec ffmpeg -i "concat:$(echo {} | paste -sd '|' -)" -c copy "$merged_file" \;
+
+            # Delete individual singles after merging
+            find "$output_dir" -name "*.flac" ! -name "*_Merged.flac" -delete
+
+            echo "Merged audio saved as: $merged_file"
+        else
+            echo "Individual FLAC files saved in: $output_dir"
+        fi
+    elif [[ $format_choice == 2 ]]; then
+        # MP4 download
+        echo "Downloading playlist in MP4 format..."
+        yt-dlp -f "best" --restrict-filenames --parse-metadata "title:%(title).50s" -o "$output_dir/%(title)s.mp4" "$url"
+        echo "MP4 files saved in: $output_dir"
+    else
+        echo "Invalid option selected. Exiting..."
+        return
+    fi
 }
 
 # Function to check for updates
@@ -93,23 +109,34 @@ show_menu() {
     while true; do
         echo "YouTube Downloader Bot"
         echo "1. Download Audio (FLAC)"
-        echo "2. Download Video"
+        echo "2. Download Video (MP4)"
         echo "3. Download Playlist"
-        echo "4. YouTube Search"
-        echo "5. Convert Video to GIF"
-        echo "6. Check for Updates"
-        echo "7. Exit"
+        echo "4. Check for Updates"
+        echo "5. Exit"
         read -p "Choose an option: " choice
 
         case $choice in
-            1) download_audio ;;
-            2) download_video ;;
-            3) download_playlist ;;
-            4) youtube_search ;;
-            5) convert_to_gif ;;
-            6) update_bot ;;
-            7) echo "Exiting..."; exit 0 ;;
-            *) echo "Invalid option, try again." ;;
+            1) 
+                read -p "Enter video URL: " url
+                download_content "$url" "bestaudio --extract-audio --audio-format flac" "/storage/emulated/0/Music/Songs" "flac"
+                ;;
+            2) 
+                read -p "Enter video URL: " url
+                download_content "$url" "best" "/storage/emulated/0/Videos" "mp4"
+                ;;
+            3) 
+                download_playlist
+                ;;
+            4) 
+                update_bot
+                ;;
+            5) 
+                echo "Exiting..."
+                exit 0
+                ;;
+            *) 
+                echo "Invalid option, try again."
+                ;;
         esac
     done
 }
