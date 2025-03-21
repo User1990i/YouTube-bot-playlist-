@@ -1,18 +1,33 @@
 #!/bin/bash
 
-# Function to display a colorful YouTube banner
+# Function to display a colorful YTBot banner in multiple shades of red
 display_banner() {
-    echo -e "\e[31m████████╗ ██████╗ ██╗  ██╗███████╗███╗   ██╗\e[0m"  # Red
-    echo -e "\e[33m╚══██╔══╝██╔═══██╗██║ ██╔╝██╔════╝████╗  ██║\e[0m"  # Yellow
-    echo -e "\e[32m   ██║   ██║   ██║█████╔╝ █████╗  ██╔██╗ ██║\e[0m"  # Green
-    echo -e "\e[36m   ██║   ██║   ██║██╔═██╗ ██╔══╝  ██║╚██╗██║\e[0m"  # Cyan
-    echo -e "\e[34m   ██║   ╚██████╔╝██║  ██╗███████╗██║ ╚████║\e[0m"  # Blue
-    echo -e "\e[35m   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝\e[0m"  # Magenta
-    echo -e "\e[37mYouTube Downloader Bot v1.0 - Welcome!\e[0m"     # White
+    echo -e "\e[31m██████╗ ██╗   ██╗███████╗██╗  ██╗███████╗██████╗ \e[0m"  # Dark Red
+    echo -e "\e[91m██╔══██╗╚██╗ ██╔╝██╔════╝██║  ██║██╔════╝██╔══██╗\e[0m"  # Light Red
+    echo -e "\e[38;5;196m██████╔╝ ╚████╔╝ █████╗  ███████║█████╗  ██████╔╝ ♥️ YTBot\e[0m"  # Bright Red
+    echo -e "\e[38;5;203m██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══██║██╔══╝  ██╔══██╗\e[0m"  # Salmon Red
+    echo -e "\e[38;5;204m██████╔╝   ██║   ███████╗██║  ██║███████╗██║  ██║\e[0m"  # Tomato Red
+    echo -e "\e[38;5;209m╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝\e[0m"  # Coral Red
+    echo -e "\e[38;5;217mYouTube Downloader Bot v1.0 - Welcome!\e[0m"     # Light Coral
 }
 
 # Display the banner
 display_banner
+
+# Function to show a simple text-based loading animation
+loading_animation() {
+    local message=$1
+    echo -n "$message "
+    while true; do
+        echo -ne "\e[38;5;196m.\e[0m"  # Bright Red dot
+        sleep 0.5
+        echo -ne "\e[38;5;203m.\e[0m"  # Salmon Red dot
+        sleep 0.5
+        echo -ne "\e[38;5;204m.\e[0m"  # Tomato Red dot
+        sleep 0.5
+        echo -ne "\r$message                 \r"  # Clear the line
+    done
+}
 
 # Ensure script runs from its directory
 cd "$(dirname "$0")"
@@ -31,14 +46,24 @@ if ! command_exists yt-dlp; then
     pkg update -y && pkg install yt-dlp -y
 fi
 
-# Function to download YouTube content
+# Function to download YouTube content with animation
 download_content() {
     local url=$1
     local format=$2
     local output=$3
     echo "Downloading..."
-    yt-dlp -f "$format" -o "$output" "$url"
-    echo "Download complete!"
+    
+    # Start the loading animation in the background
+    loading_animation "Downloading" &
+    local pid=$!  # Get the process ID of the animation
+    
+    # Perform the download
+    yt-dlp -f "$format" -o "$output" "$url" >/dev/null 2>&1
+    
+    # Stop the loading animation
+    kill $pid 2>/dev/null
+    wait $pid 2>/dev/null
+    echo -e "\rDownload complete!               "  # Clear the animation line
 }
 
 # Function to download a playlist
@@ -52,8 +77,19 @@ convert_to_gif() {
     read -p "Enter video file path: " video
     read -p "Enter start time (e.g., 00:00:05): " start
     read -p "Enter duration (e.g., 5): " duration
-    ffmpeg -i "$video" -vf "fps=10,scale=320:-1:flags=lanczos" -t "$duration" "${video%.mp4}.gif"
-    echo "GIF created: ${video%.mp4}.gif"
+    echo "Converting to GIF..."
+    
+    # Start the loading animation in the background
+    loading_animation "Converting to GIF" &
+    local pid=$!
+    
+    # Perform the conversion
+    ffmpeg -i "$video" -vf "fps=10,scale=320:-1:flags=lanczos" -t "$duration" "${video%.mp4}.gif" >/dev/null 2>&1
+    
+    # Stop the loading animation
+    kill $pid 2>/dev/null
+    wait $pid 2>/dev/null
+    echo -e "\rGIF created: ${video%.mp4}.gif               "  # Clear the animation line
 }
 
 # Function to search YouTube
@@ -65,8 +101,18 @@ youtube_search() {
 # Function to check for updates
 update_bot() {
     echo "Updating yt-dlp..."
-    yt-dlp -U
-    echo "Update complete!"
+    
+    # Start the loading animation in the background
+    loading_animation "Updating yt-dlp" &
+    local pid=$!
+    
+    # Perform the update
+    yt-dlp -U >/dev/null 2>&1
+    
+    # Stop the loading animation
+    kill $pid 2>/dev/null
+    wait $pid 2>/dev/null
+    echo -e "\rUpdate complete!               "  # Clear the animation line
 }
 
 # Function to display menu
