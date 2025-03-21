@@ -9,13 +9,31 @@ command_exists() {
 }
 
 # Trap Ctrl+C (SIGINT) to gracefully exit the bot
-trap 'echo "Exiting bot..."; exit 0' SIGINT [[2]]
+trap 'echo "Exiting bot..."; exit 0' SIGINT
 
 # Ensure yt-dlp is installed
 if ! command_exists yt-dlp; then
     echo "yt-dlp is not installed. Installing..."
     pkg update -y && pkg install yt-dlp -y
 fi
+
+# Set up Termux alias and key bindings for quick access
+if ! grep -q "alias ytbot=" ~/.bashrc; then
+    echo "alias ytbot='bash ~/youtube_bot.sh'" >> ~/.bashrc
+fi
+
+# Enable line editing for bind to work
+if ! grep -q "set enable-bracketed-paste off" ~/.bashrc; then
+    echo "set enable-bracketed-paste off" >> ~/.bashrc
+fi
+
+# Bind Ctrl+Y to start the bot
+if ! grep -q 'bind "\\C-y":"bash ~/youtube_bot.sh\n"' ~/.bashrc; then
+    echo 'bind "\\C-y":"bash ~/youtube_bot.sh\n"' >> ~/.bashrc
+fi
+
+# Reload .bashrc to apply changes
+source ~/.bashrc
 
 # Function to download YouTube content
 download_content() {
@@ -25,34 +43,6 @@ download_content() {
     echo "Downloading..."
     yt-dlp -f "$format" -o "$output" "$url"
     echo "Download complete!"
-}
-
-# Function to download a playlist
-download_playlist() {
-    read -p "Enter playlist URL: " url
-    download_content "$url" "best" "Playlist_%(title)s.%(ext)s"
-}
-
-# Function to convert video to GIF
-convert_to_gif() {
-    read -p "Enter video file path: " video
-    read -p "Enter start time (e.g., 00:00:05): " start
-    read -p "Enter duration (e.g., 5): " duration
-    ffmpeg -i "$video" -vf "fps=10,scale=320:-1:flags=lanczos" -t "$duration" "${video%.mp4}.gif"
-    echo "GIF created: ${video%.mp4}.gif"
-}
-
-# Function to search YouTube
-youtube_search() {
-    read -p "Enter search query: " query
-    yt-dlp "ytsearch5:$query" --get-title --get-id
-}
-
-# Function to check for updates
-update_bot() {
-    echo "Updating yt-dlp..."
-    yt-dlp -U
-    echo "Update complete!"
 }
 
 # Function to display menu
@@ -72,34 +62,16 @@ show_menu() {
         case $choice in
             1) read -p "Enter video URL: " url; download_content "$url" "bestaudio --extract-audio --audio-format flac" "%(title)s.flac" ;;
             2) read -p "Enter video URL: " url; download_content "$url" "best" "%(title)s.%(ext)s" ;;
-            3) download_playlist ;;
-            4) youtube_search ;;
-            5) convert_to_gif ;;
+            3) read -p "Enter playlist URL: " url; download_content "$url" "best" "Playlist_%(title)s.%(ext)s" ;;
+            4) read -p "Enter search query: " query; yt-dlp "ytsearch5:$query" --get-title --get-id ;;
+            5) read -p "Enter video file path: " video; read -p "Enter start time (e.g., 00:00:05): " start; read -p "Enter duration (e.g., 5): " duration; ffmpeg -i "$video" -vf "fps=10,scale=320:-1:flags=lanczos" -t "$duration" "${video%.mp4}.gif"; echo "GIF created: ${video%.mp4}.gif" ;;
             6) read -p "Enter file with URLs: " file; while read -r url; do download_content "$url" "best" "%(title)s.%(ext)s"; done < "$file" ;;
-            7) update_bot ;;
+            7) echo "Updating yt-dlp..."; yt-dlp -U; echo "Update complete!" ;;
             8) echo "Exiting..."; exit 0 ;;
             *) echo "Invalid option, try again." ;;
         esac
     done
 }
-
-# Set up Termux alias and key bindings for quick access
-if ! grep -q "alias ytbot=" ~/.bashrc; then
-    echo "alias ytbot='bash ~/youtube_bot.sh'" >> ~/.bashrc
-fi
-
-# Enable line editing for bind to work
-if ! grep -q "set enable-bracketed-paste off" ~/.bashrc; then
-    echo "set enable-bracketed-paste off" >> ~/.bashrc
-fi
-
-# Bind Ctrl+Y to start the bot
-if ! grep -q 'bind "\C-y":"bash ~/youtube_bot.sh\n"' ~/.bashrc; then
-    echo 'bind "\C-y":"bash ~/youtube_bot.sh\n"' >> ~/.bashrc
-fi
-
-# Reload .bashrc to apply changes
-source ~/.bashrc [[3]]
 
 # Run the menu
 show_menu
