@@ -1,136 +1,124 @@
 #!/bin/bash
 
 # Welcome message
-echo "Welcome to the YouTube Bot Installer & Downloader!"
-echo "This script will install required dependencies and allow you to download YouTube videos, audio, or playlists."
+echo "Welcome to the YouTube Downloader Bot!"
+echo "This script will install required dependencies and allow you to download YouTube videos, audio, and playlists."
 
-# Step 1: Update and upgrade Termux packages
-echo "Updating and upgrading Termux packages..."
-pkg update && pkg upgrade -y
+# Auto-update function
+update_bot() {
+    echo "Checking for updates..."
+    remote_version=$(curl -s https://raw.githubusercontent.com/User1990i/YouTube-bot/main/version.txt)
+    local_version=$(cat ~/.youtube_bot_version 2>/dev/null || echo "0")
 
-# Step 2: Install required tools
-echo "Installing dependencies..."
-pkg install -y python ffmpeg termux-api git curl
+    if [[ "$remote_version" != "$local_version" ]]; then
+        echo "Updating bot..."
+        curl -o ~/youtube_bot.sh https://raw.githubusercontent.com/User1990i/YouTube-bot/main/youtube_bot.sh
+        chmod +x ~/youtube_bot.sh
+        echo "$remote_version" > ~/.youtube_bot_version
+        echo "Update complete! Restarting bot..."
+        exec bash ~/youtube_bot.sh
+    else
+        echo "You're using the latest version."
+    fi
+}
 
-# Step 3: Install yt-dlp
-echo "Installing yt-dlp..."
-pip install yt-dlp
+# Update Termux packages and install dependencies
+pkg update -y && pkg upgrade -y
+pkg install -y python ffmpeg termux-api git curl jq
 
-# Step 4: Grant storage permissions
-echo "Granting storage permissions..."
+# Install yt-dlp
+pip install yt-dlp mutagen
+
+# Grant storage permissions
 termux-setup-storage
 
-# Define output directories
-audio_dir="/storage/emulated/0/Music/Songs"
-video_dir="/storage/emulated/0/Videos"
-playlist_audio_dir="/storage/emulated/0/Music/Playlists"
-playlist_video_dir="/storage/emulated/0/Videos/Playlists"
+# Define directories
+base_dir="/storage/emulated/0/YT-Downloads"
+audio_dir="$base_dir/Audio"
+video_dir="$base_dir/Video"
+playlist_audio_dir="$base_dir/Playlists/Audio"
+playlist_video_dir="$base_dir/Playlists/Video"
 mkdir -p "$audio_dir" "$video_dir" "$playlist_audio_dir" "$playlist_video_dir"
 
-# Step 5: Add alias to .bashrc for easy access
-echo "Setting up alias for easy access..."
+# Add alias to .bashrc
 if ! grep -q "alias youtube-bot" ~/.bashrc; then
     echo 'alias youtube-bot="bash ~/youtube_bot.sh"' >> ~/.bashrc
 fi
 source ~/.bashrc
 
-# Completion message
-echo "Installation complete!"
-echo "You can now run the bot by typing 'youtube-bot' in Termux."
+echo "Installation complete! Type 'youtube-bot' to run the script."
 
-# ---- YouTube Bot Functionality ----
+# ---- Main Menu ----
 while true; do
-    echo "YouTube Downloader Bot is running."
-    echo "Choose an option:"
-    echo "1. Download Audio (FLAC format)"
-    echo "2. Download Video (choose quality)"
+    echo -e "\nSelect an option:"
+    echo "1. Download Audio (FLAC)"
+    echo "2. Download Video"
     echo "3. Download Playlist"
-    echo "4. Exit"
-    read -p "Enter your choice (1, 2, 3, or 4): " choice
+    echo "4. Convert Video to GIF"
+    echo "5. Search YouTube"
+    echo "6. Exit"
+    read -p "Choice: " choice
 
-    if [[ $choice == "3" ]]; then
-        echo "You selected to download a playlist."
-        echo "Choose an option:"
-        echo "1. Download as Songs (FLAC)"
-        echo "2. Download as Videos (MP4)"
-        read -p "Enter your choice (1 or 2): " playlist_choice
-
-        if [[ $playlist_choice == "1" ]]; then
-            echo "You selected to download the playlist as FLAC audio."
-            echo "Paste the YouTube playlist link and press Enter."
+    case $choice in
+        1)  # Download Audio
+            read -p "Enter YouTube link: " youtube_link
+            yt-dlp -x --audio-format flac -o "$audio_dir/%(title)s.%(ext)s" "$youtube_link"
+            echo "Download complete: $audio_dir"
+            ;;
+        
+        2)  # Download Video
+            read -p "Enter YouTube link: " youtube_link
+            read -p "Enter video quality (e.g., 720p, best): " quality
+            yt-dlp -f "bestvideo[height<=$quality]+bestaudio/best" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$youtube_link"
+            echo "Download complete: $video_dir"
+            ;;
+        
+        3)  # Download Playlist
+            read -p "Enter playlist link: " playlist_link
+            echo "1. Download as Songs (FLAC)"
+            echo "2. Download as Videos (MP4)"
+            read -p "Choice: " playlist_choice
             
-            while true; do
-                read -p "> " playlist_link
-                if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
-                    playlist_name=$(yt-dlp --print "%(playlist_title)s" "$playlist_link" | head -n 1 | sed 's/ /_/g')
-                    output_dir="$playlist_audio_dir/$playlist_name"
-                    mkdir -p "$output_dir"
+            if [[ $playlist_choice == "1" ]]; then
+                playlist_name=$(yt-dlp --print "%(playlist_title)s" "$playlist_link" | head -n 1 | tr ' ' '_')
+                output_dir="$playlist_audio_dir/$playlist_name"
+                mkdir -p "$output_dir"
+                yt-dlp -x --audio-format flac -o "$output_dir/%(title)s.%(ext)s" "$playlist_link"
+                echo "Playlist saved in: $output_dir"
 
-                    echo "Downloading playlist as FLAC audio..."
-                    yt-dlp -x --audio-format flac --ffmpeg-location $(which ffmpeg) -o "$output_dir/%(title)s.%(ext)s" "$playlist_link"
-                    
-                    if [ $? -eq 0 ]; then
-                        echo "Playlist download complete! Saved in: $output_dir"
-
-                        # Ask if user wants to merge audio
-                        echo "Do you want to merge all downloaded audio files into a single file?"
-                        echo "1. Yes (Merge into one FLAC file)"
-                        echo "2. No (Keep as separate files)"
-                        read -p "Enter your choice (1 or 2): " merge_choice
-
-                        if [[ $merge_choice == "1" ]]; then
-                            echo "Merging all audio files into one..."
-                            merged_file="$output_dir/Merged_Playlist.flac"
-                            ffmpeg -y -i "concat:$(ls "$output_dir"/*.flac | tr '\n' '|' | sed 's/|$//')" -acodec copy "$merged_file"
-
-                            if [ $? -eq 0 ]; then
-                                echo "Merge complete! Saved as: $merged_file"
-                            else
-                                echo "Error merging the files."
-                            fi
-                        else
-                            echo "Keeping individual files."
-                        fi
-                    else
-                        echo "Error downloading the playlist. Try again."
-                    fi
-                else
-                    echo "Invalid input. Please paste a valid YouTube playlist link."
+                # Merge option
+                read -p "Merge all audio files into one? (y/n): " merge_choice
+                if [[ $merge_choice == "y" ]]; then
+                    ffmpeg -i "concat:$(ls "$output_dir"/*.flac | tr '\n' '|' | sed 's/|$//')" -acodec copy "$output_dir/Merged_Playlist.flac"
+                    echo "Merged file saved in: $output_dir"
                 fi
-            done
 
-        elif [[ $playlist_choice == "2" ]]; then
-            echo "You selected to download the playlist as Videos."
-            echo "Paste the YouTube playlist link and press Enter."
-            
-            while true; do
-                read -p "> " playlist_link
-                if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
-                    playlist_name=$(yt-dlp --print "%(playlist_title)s" "$playlist_link" | head -n 1 | sed 's/ /_/g')
-                    output_dir="$playlist_video_dir/$playlist_name"
-                    mkdir -p "$output_dir"
-
-                    echo "Downloading playlist videos..."
-                    yt-dlp -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$output_dir/%(title)s.%(ext)s" "$playlist_link"
-                    
-                    if [ $? -eq 0 ]; then
-                        echo "Playlist download complete! Saved in: $output_dir"
-                    else
-                        echo "Error downloading the playlist. Try again."
-                    fi
-                else
-                    echo "Invalid input. Please paste a valid YouTube playlist link."
-                fi
-            done
-
-        else
-            echo "Invalid choice. Returning to the main menu."
-        fi
-
-    elif [[ $choice == "4" ]]; then
-        echo "Exiting YouTube Bot. Goodbye!"
-        exit 0
-    else
-        echo "Invalid choice. Please enter 1, 2, 3, or 4."
-    fi
+            elif [[ $playlist_choice == "2" ]]; then
+                playlist_name=$(yt-dlp --print "%(playlist_title)s" "$playlist_link" | head -n 1 | tr ' ' '_')
+                output_dir="$playlist_video_dir/$playlist_name"
+                mkdir -p "$output_dir"
+                yt-dlp -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$output_dir/%(title)s.%(ext)s" "$playlist_link"
+                echo "Playlist saved in: $output_dir"
+            fi
+            ;;
+        
+        4)  # Convert Video to GIF
+            read -p "Enter video file path: " video_file
+            read -p "Enter GIF output name (without .gif): " gif_name
+            ffmpeg -i "$video_file" -vf "fps=10,scale=320:-1" "$base_dir/$gif_name.gif"
+            echo "GIF saved in: $base_dir/$gif_name.gif"
+            ;;
+        
+        5)  # YouTube Search
+            read -p "Enter search query: " query
+            yt-dlp "ytsearch5:$query" --print "Title: %(title)s | URL: %(webpage_url)s"
+            ;;
+        
+        6)  # Exit
+            echo "Goodbye!"
+            exit 0
+            ;;
+        
+        *) echo "Invalid choice. Try again." ;;
+    esac
 done
