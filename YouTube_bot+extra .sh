@@ -47,6 +47,16 @@ batch_download() {
     wait
 }
 
+# Set up Ctrl+Y shortcut for running the bot
+setup_shortcut() {
+    echo "Setting up Ctrl+Y shortcut..."
+    shortcut_command="bind '"\C-y"' 'bash ~/youtube_bot.sh\n'"
+    if ! grep -q "$shortcut_command" ~/.inputrc; then
+        echo "$shortcut_command" >> ~/.inputrc
+    fi
+    bind -f ~/.inputrc
+}
+
 # Main Menu
 while true; do
     echo -e "\nYouTube Downloader Bot"
