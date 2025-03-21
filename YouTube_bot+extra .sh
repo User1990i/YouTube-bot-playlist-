@@ -8,39 +8,14 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Step 1: Install proot-distro if missing
-if ! command_exists proot-distro; then
-    echo "Installing proot-distro..."
-    pkg update -y && pkg install proot-distro -y
+# Ensure yt-dlp is installed
+if ! command_exists yt-dlp; then
+    echo "yt-dlp is not installed. Installing..."
+    pkg update -y && pkg install yt-dlp -y
 fi
 
-# Step 2: Install Debian if not already installed
-if [ ! -d "$PREFIX/var/lib/proot-distro/installed-rootfs/debian" ]; then
-    echo "Installing Debian (lightweight Linux)..."
-    proot-distro install debian
-fi
-
-# Step 3: Ensure Debian is set up correctly
-echo "Setting up Debian environment..."
-proot-distro enable debian
-proot-distro login debian -- echo "Debian is now set up!"
-
-# Step 4: Inside Debian, install yt-dlp and set up Ctrl+Y binding
-echo "Configuring YouTube Bot inside Debian..."
-proot-distro login debian -- bash -c "
-    apt update -y && apt install yt-dlp nano -y
-    echo 'bind \"\\C-y\":\"~/youtube_bot.sh\n\"' >> ~/.bashrc
-    echo 'Setup complete! Press Ctrl+Y inside Debian to run the bot.'
-"
-
-# Step 5: Set up Termux alias for quick access
-echo "alias ytbot='bash ~/youtube_bot.sh'" >> ~/.bashrc
-source ~/.bashrc
-
-# Step 6: Instructions for the user
-echo "Debian is installed! To start it, type: proot-distro login debian"
-echo "Inside Debian, press Ctrl+Y to run the YouTube bot."
-echo "Or in Termux, type: ytbot"
+# Trap Ctrl+C (SIGINT) to gracefully exit the bot
+trap 'echo "Exiting bot..."; exit 0' SIGINT
 
 # Function to download YouTube content
 download_content() {
@@ -107,6 +82,19 @@ show_menu() {
         esac
     done
 }
+
+# Set up Termux alias and key bindings for quick access
+if ! grep -q "alias ytbot=" ~/.bashrc; then
+    echo "alias ytbot='bash ~/youtube_bot.sh'" >> ~/.bashrc
+fi
+
+# Bind Ctrl+Y to start the bot
+if ! grep -q 'bind "\C-y":"bash ~/youtube_bot.sh\n"' ~/.bashrc; then
+    echo 'bind "\C-y":"bash ~/youtube_bot.sh\n"' >> ~/.bashrc
+fi
+
+# Reload .bashrc to apply changes
+source ~/.bashrc
 
 # Run the menu
 show_menu
