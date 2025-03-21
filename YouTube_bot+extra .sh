@@ -2,13 +2,23 @@
 
 # Function to display a colorful YTBot banner in red shades
 display_banner() {
-    echo -e "\e[31m██████╗ ██╗   ██╗███████╗██╗  ██╗███████╗██████╗ \e[0m"
-    echo -e "\e[91m██╔══██╗╚██╗ ██╔╝██╔════╝██║  ██║██╔════╝██╔══██╗\e[0m"
-    echo -e "\e[38;5;196m██████╔╝ ╚████╔╝ █████╗  ███████║█████╗  ██████╔╝ ♥️ YTBot\e[0m"
-    echo -e "\e[38;5;203m██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══██║██╔══╝  ██╔══██╗\e[0m"
-    echo -e "\e[38;5;204m██████╔╝   ██║   ███████╗██║  ██║███████╗██║  ██║\e[0m"
-    echo -e "\e[38;5;209m╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝\e[0m"
-    echo -e "\e[38;5;217mYouTube Downloader Bot - Fixed Version!\e[0m"
+    if [[ $TERM == "xterm"* || $TERM == "screen"* ]]; then
+        echo -e "\e[31m██████╗ ██╗   ██╗███████╗██╗  ██╗███████╗██████╗ \e[0m"
+        echo -e "\e[91m██╔══██╗╚██╗ ██╔╝██╔════╝██║  ██║██╔════╝██╔══██╗\e[0m"
+        echo -e "\e[38;5;196m██████╔╝ ╚████╔╝ █████╗  ███████║█████╗  ██████╔╝ ♥️ YTBot\e[0m"
+        echo -e "\e[38;5;203m██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══██║██╔══╝  ██╔══██╗\e[0m"
+        echo -e "\e[38;5;204m██████╔╝   ██║   ███████╗██║  ██║███████╗██║  ██║\e[0m"
+        echo -e "\e[38;5;209m╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝\e[0m"
+        echo -e "\e[38;5;217mYouTube Downloader Bot - Fixed Version!\e[0m"
+    else
+        echo "██████╗ ██╗   ██╗███████╗██╗  ██╗███████╗██████╗"
+        echo "██╔══██╗╚██╗ ██╔╝██╔════╝██║  ██║██╔════╝██╔══██╗"
+        echo "██████╔╝ ╚████╔╝ █████╗  ███████║█████╗  ██████╔╝ ♥️ YTBot"
+        echo "██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══██║██╔══╝  ██╔══██╗"
+        echo "██████╔╝   ██║   ███████╗██║  ██║███████╗██║  ██║"
+        echo "╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝"
+        echo "YouTube Downloader Bot - Fixed Version!"
+    fi
 }
 
 # Display the banner
@@ -22,13 +32,41 @@ command_exists() {
 # Ensure yt-dlp & ffmpeg are installed
 if ! command_exists yt-dlp || ! command_exists ffmpeg; then
     echo "Installing required packages..."
-    pkg update -y && pkg install yt-dlp ffmpeg pv -y
+    if [[ -f /etc/os-release ]]; then
+        # Detect OS and use appropriate package manager
+        . /etc/os-release
+        case $ID in
+            ubuntu|debian)
+                sudo apt update && sudo apt install -y yt-dlp ffmpeg pv
+                ;;
+            fedora)
+                sudo dnf install -y yt-dlp ffmpeg pv
+                ;;
+            arch)
+                sudo pacman -Syu --noconfirm yt-dlp ffmpeg pv
+                ;;
+            *)
+                echo "Unsupported OS. Please install yt-dlp, ffmpeg, and pv manually."
+                exit 1
+                ;;
+        esac
+    elif command_exists pkg; then
+        pkg update -y && pkg install -y yt-dlp ffmpeg pv
+    else
+        echo "Unable to detect package manager. Please install yt-dlp, ffmpeg, and pv manually."
+        exit 1
+    fi
 fi
 
-# Function to show a red progress bar
+# Function to show a progress bar
 show_progress() {
-    local size=$(stat -c%s "$1")  # Get file size
-    pv -p -t -e -N "Processing" -c -s $size < "$1" > /dev/null 2>&1
+    local size
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        size=$(stat -f%z "$1")  # macOS
+    else
+        size=$(stat -c%s "$1")  # Linux
+    fi
+    pv -p -t -e -N "Processing" -c -s "$size" < "$1" > /dev/null 2>&1
 }
 
 # Function to download YouTube content with progress bar
@@ -39,10 +77,12 @@ download_content() {
 
     echo -e "\e[38;5;196mDownloading...\e[0m"
     
-    # Run yt-dlp and capture output
-    yt-dlp -f "$format" -o "$output" "$url" | tee yt-dlp-log.txt | while read line; do
-        echo -ne "\e[38;5;196m>\e[0m $line\r"  # Show live progress
-    done
+    # Run yt-dlp with built-in progress reporting
+    yt-dlp -f "$format" -o "$output" --progress-template "Downloading... %(progress._percent_str)s" "$url"
+    if [[ $? -ne 0 ]]; then
+        echo -e "\e[38;5;196mDownload failed.\e[0m"
+        return 1
+    fi
     echo -e "\nDownload complete!"
 }
 
@@ -60,9 +100,14 @@ download_playlist() {
         if [[ $merge_choice == "Y" || $merge_choice == "y" ]]; then
             yt-dlp -f bestaudio --extract-audio --audio-format flac -o "$download_path/%(title)s.flac" "$url"
             echo -e "\e[38;5;196mMerging audio...\e[0m"
-            ffmpeg -y -i "concat:$(ls "$download_path"/*.flac | tr '\n' '|')" -c copy "$download_path/Merged_Audio_$playlist_name.flac"
-            rm "$download_path"/*.flac  # Delete individual files
-            echo -e "\e[38;5;196mMerged file saved to: $download_path/Merged_Audio_$playlist_name.flac\e[0m"
+            file_list=$(ls "$download_path"/*.flac | tr '\n' '|')
+            ffmpeg -y -i "concat:$file_list" -c copy "$download_path/Merged_Audio_$playlist_name.flac"
+            if [[ $? -eq 0 ]]; then
+                rm "$download_path"/*.flac  # Delete individual files
+                echo -e "\e[38;5;196mMerged file saved to: $download_path/Merged_Audio_$playlist_name.flac\e[0m"
+            else
+                echo -e "\e[38;5;196mMerge failed. Individual files preserved.\e[0m"
+            fi
         else
             yt-dlp -f bestaudio --extract-audio --audio-format flac -o "$download_path/%(title)s.flac" "$url"
             echo -e "\e[38;5;196mFiles saved in: $download_path\e[0m"
@@ -79,6 +124,9 @@ download_playlist() {
 batch_download() {
     read -p "Enter file with URLs: " file
     while read -r url; do
+        if [[ -z "$url" || "$url" == "#"* ]]; then
+            continue  # Skip empty lines or comments
+        fi
         download_content "$url" "best" "%(title)s.%(ext)s"
     done < "$file"
 }
@@ -86,7 +134,15 @@ batch_download() {
 # Function to check for updates
 update_bot() {
     echo "Updating yt-dlp..."
-    yt-dlp -U
+    if command_exists pip; then
+        pip install --upgrade yt-dlp
+    elif command_exists brew; then
+        brew upgrade yt-dlp
+    elif command_exists apt; then
+        sudo apt install --only-upgrade yt-dlp
+    else
+        yt-dlp -U
+    fi
     echo "Update complete!"
 }
 
@@ -100,7 +156,12 @@ show_menu() {
         echo "4. Batch Download"
         echo "5. Check for Updates"
         echo "6. Exit"
-        read -p "Choose an option: " choice
+        read -p "Choose an option (1-6): " choice
+
+        if ! [[ "$choice" =~ ^[1-6]$ ]]; then
+            echo "Invalid option. Please enter a number between 1 and 6."
+            continue
+        fi
 
         case $choice in
             1) 
@@ -123,9 +184,6 @@ show_menu() {
             6) 
                 echo "Exiting..."
                 exit 0
-                ;;
-            *) 
-                echo "Invalid option, try again."
                 ;;
         esac
     done
