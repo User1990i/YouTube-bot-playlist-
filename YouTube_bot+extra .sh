@@ -1,116 +1,112 @@
 #!/bin/bash
 
-# Auto-Update System
-update_script() {
-    echo "Checking for updates..."
-    latest_script_url="https://raw.githubusercontent.com/User1990i/YouTube-bot-playlist-/main/YouTube_bot.sh"
-    curl -o ~/youtube_bot.sh "$latest_script_url"
-    chmod +x ~/youtube_bot.sh
-    echo "Update completed! Restarting bot..."
-    exec bash ~/youtube_bot.sh
+# Ensure script runs from its directory
+cd "$(dirname "$0")"
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
 }
 
-# Define Directories
-base_audio_dir="/storage/emulated/0/Music"
-base_video_dir="/storage/emulated/0/Videos"
-mkdir -p "$base_audio_dir" "$base_video_dir"
+# Step 1: Install proot-distro if missing
+if ! command_exists proot-distro; then
+    echo "Installing proot-distro..."
+    pkg update -y && pkg install proot-distro -y
+fi
 
-# Function to Normalize Audio
-normalize_audio() {
-    for file in "$1"/*.flac; do
-        ffmpeg -i "$file" -af loudnorm "$file.normalized.flac"
-        mv "$file.normalized.flac" "$file"
-    done
+# Step 2: Install Debian if not already installed
+if [ ! -d "$PREFIX/var/lib/proot-distro/installed-rootfs/debian" ]; then
+    echo "Installing Debian (lightweight Linux)..."
+    proot-distro install debian
+fi
+
+# Step 3: Ensure Debian is set up correctly
+echo "Setting up Debian environment..."
+proot-distro enable debian
+proot-distro login debian -- echo "Debian is now set up!"
+
+# Step 4: Inside Debian, install yt-dlp and set up Ctrl+Y binding
+echo "Configuring YouTube Bot inside Debian..."
+proot-distro login debian -- bash -c "
+    apt update -y && apt install yt-dlp nano -y
+    echo 'bind \"\\C-y\":\"~/youtube_bot.sh\n\"' >> ~/.bashrc
+    echo 'Setup complete! Press Ctrl+Y inside Debian to run the bot.'
+"
+
+# Step 5: Set up Termux alias for quick access
+echo "alias ytbot='bash ~/youtube_bot.sh'" >> ~/.bashrc
+source ~/.bashrc
+
+# Step 6: Instructions for the user
+echo "Debian is installed! To start it, type: proot-distro login debian"
+echo "Inside Debian, press Ctrl+Y to run the YouTube bot."
+echo "Or in Termux, type: ytbot"
+
+# Function to download YouTube content
+download_content() {
+    local url=$1
+    local format=$2
+    local output=$3
+    echo "Downloading..."
+    yt-dlp -f "$format" -o "$output" "$url"
+    echo "Download complete!"
 }
 
-# Function to Convert Video to GIF
+# Function to download a playlist
+download_playlist() {
+    read -p "Enter playlist URL: " url
+    download_content "$url" "best" "Playlist_%(title)s.%(ext)s"
+}
+
+# Function to convert video to GIF
 convert_to_gif() {
-    read -p "Enter video file path: " video_path
-    gif_path="${video_path%.*}.gif"
-    ffmpeg -i "$video_path" -vf "fps=10,scale=320:-1:flags=lanczos" -c:v gif "$gif_path"
-    echo "GIF saved at: $gif_path"
+    read -p "Enter video file path: " video
+    read -p "Enter start time (e.g., 00:00:05): " start
+    read -p "Enter duration (e.g., 5): " duration
+    ffmpeg -i "$video" -vf "fps=10,scale=320:-1:flags=lanczos" -t "$duration" "${video%.mp4}.gif"
+    echo "GIF created: ${video%.mp4}.gif"
 }
 
-# YouTube Search Function
-search_youtube() {
+# Function to search YouTube
+youtube_search() {
     read -p "Enter search query: " query
-    yt-dlp "ytsearch5:$query" --print "Title: %(title)s | URL: %(webpage_url)s"
+    yt-dlp "ytsearch5:$query" --get-title --get-id
 }
 
-# Batch Download Function
-batch_download() {
-    echo "Enter multiple YouTube URLs (separate by spaces):"
-    read -a urls
-    for url in "${urls[@]}"; do
-        yt-dlp -f bestvideo+bestaudio/best -o "$base_video_dir/%(title)s.%(ext)s" "$url" &
+# Function to check for updates
+update_bot() {
+    echo "Updating yt-dlp..."
+    yt-dlp -U
+    echo "Update complete!"
+}
+
+# Function to display menu
+show_menu() {
+    while true; do
+        echo "YouTube Downloader Bot"
+        echo "1. Download Audio (FLAC)"
+        echo "2. Download Video"
+        echo "3. Download Playlist"
+        echo "4. YouTube Search"
+        echo "5. Convert Video to GIF"
+        echo "6. Batch Download"
+        echo "7. Check for Updates"
+        echo "8. Exit"
+        read -p "Choose an option: " choice
+
+        case $choice in
+            1) read -p "Enter video URL: " url; download_content "$url" "bestaudio --extract-audio --audio-format flac" "%(title)s.flac" ;;
+            2) read -p "Enter video URL: " url; download_content "$url" "best" "%(title)s.%(ext)s" ;;
+            3) download_playlist ;;
+            4) youtube_search ;;
+            5) convert_to_gif ;;
+            6) read -p "Enter file with URLs: " file; while read -r url; do download_content "$url" "best" "%(title)s.%(ext)s"; done < "$file" ;;
+            7) update_bot ;;
+            8) echo "Exiting..."; exit 0 ;;
+            *) echo "Invalid option, try again." ;;
+        esac
     done
-    wait
 }
 
-# Set up Ctrl+Y shortcut for running the bot
-setup_shortcut() {
-    echo "Setting up Ctrl+Y shortcut..."
-    shortcut_command="bind '"\C-y"' 'bash ~/youtube_bot.sh\n'"
-    if ! grep -q "$shortcut_command" ~/.inputrc; then
-        echo "$shortcut_command" >> ~/.inputrc
-    fi
-    bind -f ~/.inputrc
-}
-
-# Main Menu
-while true; do
-    echo -e "\nYouTube Downloader Bot"
-    echo "1. Download Audio (FLAC)"
-    echo "2. Download Video"
-    echo "3. Download Playlist"
-    echo "4. YouTube Search"
-    echo "5. Convert Video to GIF"
-    echo "6. Batch Download"
-    echo "7. Check for Updates"
-    echo "8. Exit"
-    read -p "Choose an option: " choice
-
-    case $choice in
-        1)  # Audio Download
-            read -p "Enter YouTube URL: " url
-            yt-dlp -x --audio-format flac -o "$base_audio_dir/%(title)s.%(ext)s" "$url"
-            ;;
-        2)  # Video Download
-            read -p "Enter YouTube URL: " url
-            read -p "Enter preferred quality (144p-4K/best): " quality
-            yt-dlp -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" -o "$base_video_dir/%(title)s.%(ext)s" "$url"
-            ;;
-        3)  # Playlist Download
-            read -p "Enter YouTube playlist URL: " playlist_url
-            read -p "Download as (1: Audio, 2: Video): " format_choice
-            if [[ $format_choice == "1" ]]; then
-                yt-dlp -x --audio-format flac -o "$base_audio_dir/Playlists/%(playlist_title)s/%(title)s.%(ext)s" "$playlist_url"
-                read -p "Merge all audio into one file? (y/n): " merge_choice
-                if [[ $merge_choice == "y" ]]; then
-                    normalize_audio "$base_audio_dir/Playlists/$(yt-dlp --print "%(playlist_title)s" "$playlist_url" | head -n 1)"
-                fi
-            else
-                yt-dlp -f bestvideo+bestaudio/best -o "$base_video_dir/Playlists/%(playlist_title)s/%(title)s.%(ext)s" "$playlist_url"
-            fi
-            ;;
-        4)  # YouTube Search
-            search_youtube
-            ;;
-        5)  # Convert Video to GIF
-            convert_to_gif
-            ;;
-        6)  # Batch Download
-            batch_download
-            ;;
-        7)  # Update
-            update_script
-            ;;
-        8)  # Exit
-            echo "Goodbye!"
-            exit 0
-            ;;
-        *)  # Invalid Choice
-            echo "Invalid choice, please select again."
-            ;;
-    esac
-done
+# Run the menu
+show_menu
