@@ -99,7 +99,7 @@ if ! grep -q 'bind "\C-y":"bash ~/youtube_bot.sh\n"' ~/.bashrc; then
 fi
 
 # Reload .bashrc to apply changes
-source ~/.bashrc
+source ~/.bashrc [[3]]
 
 # Run the menu
 show_menu
