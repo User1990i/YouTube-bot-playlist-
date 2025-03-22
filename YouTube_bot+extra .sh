@@ -213,44 +213,41 @@ download_channel() {
     echo -e "1. Download Channel Audio (FLAC format)"
     echo -e "2. Download Channel Video (MP4 format)"
     read -p "Enter your choice (1 or 2): " channel_choice
-    echo -e "Paste a YouTube channel link and press Enter to download the content."
-    read -p "> " channel_link
 
-    if [[ $channel_link == *"youtube.com/channel"* ]]; then
-        echo -e "${GREEN}Fetching channel metadata. Please wait...${NC}"
-        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_link")
-        channel_name=$(sanitize_folder_name "$channel_name")
-        channel_folder="$channel_dir/$channel_name"
-        mkdir -p "$channel_folder"
-        echo -e "${GREEN}Channel folder created: $channel_folder${NC}"
-        
-        if [[ $channel_choice == "1" ]]; then
-            echo -e "${GREEN}Downloading channel '$channel_name' as audio in FLAC format...${NC}"
-            yt-dlp --yes-playlist -x --audio-format flac -o "$channel_folder/%(title)s.%(ext)s" "$channel_link"
-            if [ $? -eq 0 ]; then
-                echo -e "${GREEN}Channel audio download completed successfully!${NC}"
-                echo -e "The audio files have been saved in: $channel_folder"
-            else
-                echo -e "${RED}An error occurred while downloading the channel audio. Please try again.${NC}"
-            fi
-            go_back
-        elif [[ $channel_choice == "2" ]]; then
-            echo -e "${GREEN}Downloading channel '$channel_name' as video in MP4 format...${NC}"
-            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_link"
-            if [ $? -eq 0 ]; then
-                echo -e "${GREEN}Channel video download completed successfully!${NC}"
-                echo -e "The videos have been saved in: $channel_folder"
-            else
-                echo -e "${RED}An error occurred while downloading the channel videos. Please try again.${NC}"
-            fi
-            go_back
+    # Prompt for YouTube Channel ID
+    read -p "Paste a YouTube Channel ID and press Enter to download the content: " channel_id
+
+    # Validate the channel ID
+    if [[ ! "$channel_id" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        echo -e "${RED}Invalid Channel ID. Please provide a valid YouTube Channel ID.${NC}"
+        download_channel
+        return
+    fi
+
+    # Form the channel URL using the Channel ID
+    channel_url="https://www.youtube.com/channel/$channel_id"
+
+    if [[ $channel_choice == "1" ]]; then
+        echo -e "${GREEN}Downloading audio from the channel in FLAC format...${NC}"
+        yt-dlp -x --audio-format flac -o "$audio_dir/%(title)s.%(ext)s" "$channel_url"
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Channel audio download completed successfully!${NC}"
+            echo -e "The audio has been saved in: $audio_dir"
         else
-            echo -e "${RED}Invalid choice. Please restart the bot and enter 1 or 2.${NC}"
+            echo -e "${RED}An error occurred while downloading the channel audio. Please try again.${NC}"
+        fi
+    elif [[ $channel_choice == "2" ]]; then
+        echo -e "${GREEN}Downloading videos from the channel in MP4 format...${NC}"
+        yt-dlp -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$channel_url"
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Channel video download completed successfully!${NC}"
+            echo -e "The videos have been saved in: $video_dir"
+        else
+            echo -e "${RED}An error occurred while downloading the channel videos. Please try again.${NC}"
         fi
     else
-        echo -e "${RED}Invalid input. Please paste a valid YouTube channel link.${NC}"
+        echo -e "${RED}Invalid choice. Please restart the bot and enter 1 or 2.${NC}"
     fi
-}
 
-# Start the bot by calling the main menu function
-main_menu
+    go_back
+}
