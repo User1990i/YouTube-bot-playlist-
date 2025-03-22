@@ -42,8 +42,8 @@ show_progress() {
 show_banner() {
     clear
     echo -e "${BOLD_RED}==========================================="
-    echo -e " YouTube Downloader Bot - Version 1.4 "
-    echo -e "        Di Stable Build v1        "
+    echo -e "         YouTube Downloader Bot  "
+    echo -e "           Stable Build v1        "
     echo -e "==========================================="
     echo -e "${NC}"
     echo -e "${RED}"
