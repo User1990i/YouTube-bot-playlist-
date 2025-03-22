@@ -7,10 +7,10 @@ video_dir="$base_dir/Videos"
 playlist_dir="$base_dir/playlists"
 channel_dir="$base_dir/Channels"
 
-mkdir -p "$audio_dir"  
-mkdir -p "$video_dir"  
-mkdir -p "$playlist_dir"  
-mkdir -p "$channel_dir"  
+mkdir -p "$audio_dir"
+mkdir -p "$video_dir"
+mkdir -p "$playlist_dir"
+mkdir -p "$channel_dir"
 
 # YouTube colors
 RED='\033[0;31m'
@@ -22,7 +22,7 @@ NC='\033[0m'  # No color
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
-    local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-/' | sed 's/[[:space:]]\+/_/g')
+    local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-' | sed 's/[[:space:]]\+/_/g')
     sanitized=${sanitized:0:50}
     echo "$sanitized"
 }
@@ -31,7 +31,7 @@ sanitize_folder_name() {
 show_banner() {
     clear
     echo -e "${BOLD_RED}==========================================="
-    echo -e "          YouTube BOT - Stable v2         "
+    echo -e "          YouTube BOT - Stable v3         "
     echo -e "==========================================="
 }
 
@@ -92,7 +92,7 @@ download_video() {
     go_back
 }
 
-# Function to download a playlist (Fixed Syntax)
+# Function to download a playlist
 download_playlist() {
     show_banner
     echo -e "${BOLD_RED}Download a YouTube Playlist.${NC}"
@@ -109,9 +109,9 @@ download_playlist() {
     mkdir -p "$playlist_folder"
 
     if [[ $playlist_choice == "1" ]]; then
-        yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%titles.%exts" "$playlist_link"
+        yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
     else
-        yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%titles.%exts" "$playlist_link"
+        yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
     fi
 
     echo -e "${GREEN}Playlist download completed!${NC}"
@@ -159,10 +159,10 @@ download_channel() {
 
         case $media_choice in
         1) 
-            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%titles.%exts" "$channel_url"
+            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         2) 
-            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%titles.%exts" "$channel_url"
+            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         *)
             echo -e "${RED}Invalid choice.${NC}"
