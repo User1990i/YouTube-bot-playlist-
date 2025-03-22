@@ -29,6 +29,18 @@ mkdir -p "$audio_dir"  # Create the audio directory if it doesn't exist
 mkdir -p "$video_dir"  # Create the video directory if it doesn't exist
 mkdir -p "$playlist_dir"  # Create the playlist directory if it doesn't exist
 
+# Function to sanitize folder names
+sanitize_folder_name() {
+    local input="$1"
+    # Remove newlines and duplicate lines
+    local sanitized=$(echo "$input" | awk '!seen[$0]++')
+    # Replace special characters with underscores
+    sanitized=$(echo "$sanitized" | tr -cd '[:alnum:][:space:]._-/' | sed 's/[[:space:]]\+/_/g')
+    # Trim to a maximum length of 50 characters
+    sanitized=${sanitized:0:50}
+    echo "$sanitized"
+}
+
 # Welcome message
 echo "YouTube Downloader Bot is running."
 echo "Choose an option:"
@@ -97,12 +109,14 @@ elif [[ $choice == "3" ]]; then
         echo "Fetching playlist metadata. Please wait..."
         # Extract the playlist name
         playlist_name=$(yt-dlp --get-filename -o "%(playlist_title)s" "$playlist_link")
+        # Sanitize the playlist name
+        playlist_name=$(sanitize_folder_name "$playlist_name")
         playlist_folder="$playlist_dir/$playlist_name"
         mkdir -p "$playlist_folder"
         echo "Playlist folder created: $playlist_folder"
         if [[ $playlist_choice == "1" ]]; then
             echo "Downloading playlist '$playlist_name' as audio in FLAC format..."
-            yt-dlp --lazy-playlist --progress -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+            yt-dlp --flat-playlist --lazy-playlist --progress -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
             if [ $? -eq 0 ]; then
                 echo "Playlist download completed successfully!"
                 echo "The songs have been saved in: $playlist_folder"
@@ -111,7 +125,7 @@ elif [[ $choice == "3" ]]; then
             fi
         elif [[ $playlist_choice == "2" ]]; then
             echo "Downloading playlist '$playlist_name' as video in MP4 format..."
-            yt-dlp --lazy-playlist --progress -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+            yt-dlp --flat-playlist --lazy-playlist --progress -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
             if [ $? -eq 0 ]; then
                 echo "Playlist download completed successfully!"
                 echo "The videos have been saved in: $playlist_folder"
