@@ -8,7 +8,7 @@ display_banner() {
     echo -e "\e[38;5;203m██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══██║██╔══╝  ██╔══██╗\e[0m"  # Salmon Red
     echo -e "\e[38;5;204m██████╔╝   ██║   ███████╗██║  ██║███████╗██║  ██║\e[0m"  # Tomato Red
     echo -e "\e[38;5;209m╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝\e[0m"  # Coral Red
-    echo -e "\e[38;5;217mYouTube Downloader Bot v1.0 - Welcome!\e[0m"     # Light Coral
+    echo -e "\e[38;5;217mYouTube Downloader Bot v1.F - Welcome!\e[0m"     # Light Coral
 }
 
 # Display the banner
@@ -31,6 +31,16 @@ if ! command_exists yt-dlp; then
     pkg update -y && pkg install yt-dlp -y
 fi
 
+# Function to sanitize and truncate playlist names
+sanitize_name() {
+    local name="$1"
+    # Replace newlines, tabs, and other special characters with underscores
+    name=$(echo "$name" | tr -d '\n' | tr -cd '[:alnum:]._- ')
+    # Truncate the name to 50 characters
+    name=$(echo "$name" | cut -c 1-50)
+    echo "$name"
+}
+
 # Function to download YouTube content with sanitized file names
 download_content() {
     local url=$1
@@ -52,15 +62,16 @@ download_content() {
 download_playlist() {
     read -p "Enter playlist URL: " url
 
+    # Extract playlist name and sanitize it
+    local playlist_name=$(yt-dlp --flat-playlist --get-title "$url" | head -n 1)
+    playlist_name=$(sanitize_name "$playlist_name")
+    local output_dir="/storage/emulated/0/Music/Songs/$playlist_name"
+
     # Prompt user for format choice
     echo "Select format:"
     echo "1. FLAC (Audio)"
     echo "2. MP4 (Video)"
     read -p "Choose an option (1/2): " format_choice
-
-    # Define output directory
-    local playlist_name=$(yt-dlp --flat-playlist --get-title "$url" | head -n 1 | tr -cd '[:alnum:]._- ')
-    local output_dir="/storage/emulated/0/Music/Songs/$playlist_name"
 
     # Create the output directory
     mkdir -p "$output_dir"
