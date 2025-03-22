@@ -22,8 +22,7 @@ NC='\033[0m'  # No color
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
-    local sanitized=$(echo "$input" | awk '!seen[$0]++')
-    sanitized=$(echo "$sanitized" | tr -cd '[:alnum:][:space:]._-/' | sed 's/[[:space:]]\+/_/g')
+    local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-/' | sed 's/[[:space:]]\+/_/g')
     sanitized=${sanitized:0:50}
     echo "$sanitized"
 }
@@ -156,22 +155,34 @@ download_channel() {
             continue
         fi
 
+        # Construct the channel URL using the provided Channel ID
+        channel_url="https://www.youtube.com/channel/$channel_id"
+
+        # Fetch the channel name using yt-dlp
+        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url")
+        if [[ -z "$channel_name" ]]; then
+            echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
+            continue
+        fi
+
+        # Sanitize the channel name for use as a folder name
+        channel_name=$(sanitize_folder_name "$channel_name")
+        channel_folder="$channel_dir/$channel_name"
+        mkdir -p "$channel_folder"
+
         echo -e "Download as:"
         echo -e "1. Audio (FLAC format)"
         echo -e "2. Video (MP4 format)"
         read -p "> " media_choice
 
-        # Construct the channel URL using the provided Channel ID
-        channel_url="https://www.youtube.com/channel/$channel_id"
-
         case $media_choice in
         1) 
             echo -e "Downloading audio from the channel..."
-            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$audio_dir/%(title)s.%(ext)s" "$channel_url"
+            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         2) 
             echo -e "Downloading video from the channel..."
-            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$channel_url"
+            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         *)
             echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
