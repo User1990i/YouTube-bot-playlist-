@@ -8,7 +8,8 @@ base_dir="/storage/emulated/0/Music_Vids"
 audio_dir="$base_dir/Songs"
 video_dir="$base_dir/Videos"
 playlist_dir="$base_dir/playlists"
-mkdir -p "$audio_dir" "$video_dir" "$playlist_dir"  # Create necessary directories
+channel_dir="$base_dir/Channels"
+mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"  # Create necessary directories
 
 # Function to sanitize folder names
 sanitize_folder_name() {
@@ -23,7 +24,8 @@ echo "Choose an option:"
 echo -e "\e[34m1. Download Audio (FLAC format)\e[0m"
 echo -e "\e[34m2. Download Video (choose quality)\e[0m"
 echo -e "\e[34m3. Download Playlist (Audio or Video)\e[0m"
-read -p "Enter your choice (1, 2, or 3): " choice
+echo -e "\e[34m4. Download YouTube Channel Content\e[0m"
+read -p "Enter your choice (1, 2, 3, or 4): " choice
 
 if [[ $choice == "3" ]]; then
     echo -e "\e[33mDownloading a playlist.\e[0m"
@@ -68,7 +70,141 @@ if [[ $choice == "3" ]]; then
     else
         echo -e "\e[31mInvalid playlist link.\e[0m"
     fi
+elif [[ $choice == "4" ]]; then
+    echo -e "\e[33mDownloading YouTube channel content.\e[0m"
+    # Function to download channel content
+    echo -e "\e[32mEnter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
+    
+    while true; do
+        read -p "> " channel_id
+
+        # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
+        if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
+            echo -e "\e[31mInvalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.\e[0m"
+            continue
+        fi
+
+        # Construct the channel URL using the provided Channel ID
+        channel_url="https://www.youtube.com/channel/$channel_id"
+
+        # Attempt to fetch the channel name
+        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
+        if [[ -z "$channel_name" ]]; then
+            echo -e "\e[31mFailed to fetch channel name. Please ensure the Channel ID is correct.\e[0m"
+            echo -e "Would you like to manually enter the channel name? (y/n)"
+            read -p "> " manual_input
+            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
+                echo -e "Enter the channel name manually:"
+                read -p "> " channel_name
+                channel_name=$(sanitize_folder_name "$channel_name")
+            else
+                echo -e "\e[31mOperation canceled. Returning to the main menu.\e[0m"
+                break
+            fi
+        else
+            channel_name=$(sanitize_folder_name "$channel_name")
+        fi
+
+        # Create the channel folder
+        channel_folder="$channel_dir/$channel_name"
+        mkdir -p "$channel_folder"
+
+        echo -e "Download as:"
+        echo -e "1. Audio (FLAC format)"
+        echo -e "2. Video (MP4 format)"
+        read -p "> " media_choice
+
+        case $media_choice in
+        1) 
+            echo -e "Downloading audio from the channel..."
+            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            ;;
+        2) 
+            echo -e "Downloading video from the channel..."
+            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            ;;
+        *)
+            echo -e "\e[31mInvalid choice. Please select 1 or 2.\e[0m"
+            continue
+            ;;
+        esac
+
+        # Confirm the download location
+        echo -e "\e[32mContent downloaded to: $channel_folder\e[0m"
+        break
+    done
+    echo -e "\e[32mDownload completed!\e[0m"
 else
     echo -e "\e[31mInvalid choice. Restart the bot.\e[0m"
 fi
 
+# Function to download channel content
+download_channel() {
+    show_banner
+    echo -e "${BOLD_RED}Download YouTube Channel Content.${NC}"
+    echo -e "Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
+
+    while true; do
+        read -p "> " channel_id
+
+        # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
+        if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
+            echo -e "${RED}Invalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.${NC}"
+            continue
+        fi
+
+        # Construct the channel URL using the provided Channel ID
+        channel_url="https://www.youtube.com/channel/$channel_id"
+
+        # Attempt to fetch the channel name
+        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
+        if [[ -z "$channel_name" ]]; then
+            echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
+            echo -e "Would you like to manually enter the channel name? (y/n)"
+            read -p "> " manual_input
+            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
+                echo -e "Enter the channel name manually:"
+                read -p "> " channel_name
+                channel_name=$(sanitize_folder_name "$channel_name")
+            else
+                echo -e "${RED}Operation canceled. Returning to the main menu.${NC}"
+                go_back
+            fi
+        else
+            channel_name=$(sanitize_folder_name "$channel_name")
+        fi
+
+        # Create the channel folder
+        channel_folder="$channel_dir/$channel_name"
+        mkdir -p "$channel_folder"
+
+        echo -e "Download as:"
+        echo -e "1. Audio (FLAC format)"
+        echo -e "2. Video (MP4 format)"
+        read -p "> " media_choice
+
+        case $media_choice in
+        1) 
+            echo -e "Downloading audio from the channel..."
+            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            ;;
+        2) 
+            echo -e "Downloading video from the channel..."
+            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            ;;
+        *)
+            echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
+            continue
+            ;;
+        esac
+
+        # Confirm the download location
+        echo -e "${GREEN}Content downloaded to: $channel_folder${NC}"
+        break
+    done
+    echo -e "${GREEN}Download completed!${NC}"
+    go_back
+}
+
+# Start script
+main_menu
