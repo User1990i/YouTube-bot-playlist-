@@ -144,29 +144,39 @@ download_playlist() {
 download_channel() {
     show_banner
     echo -e "${BOLD_RED}Download YouTube Channel Content.${NC}"
-    echo -e "Enter the **YouTube Channel ID** (alphanumeric string):"
-
+    echo -e "Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
+    
     while true; do
         read -p "> " channel_id
 
-        # Validate Channel ID (must be alphanumeric with optional dashes/underscores)
-        if [[ ! "$channel_id" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-            echo -e "${RED}Invalid Channel ID! It must be alphanumeric with dashes or underscores only.${NC}"
+        # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
+        if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
+            echo -e "${RED}Invalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.${NC}"
             continue
         fi
 
         # Construct the channel URL using the provided Channel ID
         channel_url="https://www.youtube.com/channel/$channel_id"
 
-        # Fetch the channel name using yt-dlp
-        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url")
+        # Attempt to fetch the channel name
+        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
         if [[ -z "$channel_name" ]]; then
             echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
-            continue
+            echo -e "Would you like to manually enter the channel name? (y/n)"
+            read -p "> " manual_input
+            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
+                echo -e "Enter the channel name manually:"
+                read -p "> " channel_name
+                channel_name=$(sanitize_folder_name "$channel_name")
+            else
+                echo -e "${RED}Operation canceled. Returning to the main menu.${NC}"
+                go_back
+            fi
+        else
+            channel_name=$(sanitize_folder_name "$channel_name")
         fi
 
-        # Sanitize the channel name for use as a folder name
-        channel_name=$(sanitize_folder_name "$channel_name")
+        # Create the channel folder
         channel_folder="$channel_dir/$channel_name"
         mkdir -p "$channel_folder"
 
