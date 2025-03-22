@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Define the output directories
-base_dir="/storage/emulated/0/Music & Vids"
+# Define the output directories (No spaces in path)
+base_dir="/storage/emulated/0/Music_Vids"
 audio_dir="$base_dir/Songs"
 video_dir="$base_dir/Videos"
 playlist_dir="$base_dir/playlists"
@@ -86,12 +86,12 @@ elif [[ $choice == "3" ]]; then
 
         if [[ $playlist_choice == "1" ]]; then
             echo "Downloading playlist as FLAC audio..."
-            yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
-                2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
+            yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" \
+                2> "${playlist_folder}/error_log.txt" | tee -a "${playlist_folder}/download_log.txt"
         elif [[ $playlist_choice == "2" ]]; then
             echo "Downloading playlist as MP4 video..."
-            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
-                2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
+            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" \
+                2> "${playlist_folder}/error_log.txt" | tee -a "${playlist_folder}/download_log.txt"
         else
             echo -e "\e[31mInvalid choice. Restart the bot.\e[0m"
         fi
