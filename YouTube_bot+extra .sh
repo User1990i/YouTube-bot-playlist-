@@ -1,175 +1,136 @@
 #!/bin/bash
 
-# Function to display a colorful YTBot banner in multiple shades of red
-display_banner() {
-    echo -e "\e[31m██████╗ ██╗   ██╗███████╗██╗  ██╗███████╗██████╗ \e[0m"  # Dark Red
-    echo -e "\e[91m██╔══██╗╚██╗ ██╔╝██╔════╝██║  ██║██╔════╝██╔══██╗\e[0m"  # Light Red
-    echo -e "\e[38;5;196m██████╔╝ ╚████╔╝ █████╗  ███████║█████╗  ██████╔╝ ♥️ YTBot\e[0m"  # Bright Red
-    echo -e "\e[38;5;203m██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══██║██╔══╝  ██╔══██╗\e[0m"  # Salmon Red
-    echo -e "\e[38;5;204m██████╔╝   ██║   ███████╗██║  ██║███████╗██║  ██║\e[0m"  # Tomato Red
-    echo -e "\e[38;5;209m╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝\e[0m"  # Coral Red
-    echo -e "\e[38;5;217mYouTube Downloader Bot v1.0 - Welcome!\e[0m"     # Light Coral
-}
+# Define color codes
+RED='\033[1;31m'
+NC='\033[0m' # No Color
 
-# Display the banner
-display_banner
+# Display banner
+echo -e "${RED}"
+echo "############################################################"
+echo "#                                                          #"
+echo "#      ██╗   ██╗████████╗     ██████╗  ██████╗ ████████╗    #"
+echo "#      ██║   ██║╚══██╔══╝     ██╔══██╗██╔═══██╗╚══██╔══╝    #"
+echo "#      ██║   ██║   ██║        ██████╔╝██║   ██║   ██║       #"
+echo "#      ██║   ██║   ██║        ██╔══██╗██║   ██║   ██║       #"
+echo "#      ╚██████╔╝   ██║        ██████╔╝╚██████╔╝   ██║       #"
+echo "#       ╚═════╝    ╚═╝        ╚═════╝  ╚═════╝    ╚═╝       #"
+echo "#                                                          #"
+echo "############################################################"
+echo -e "${NC}"
 
-# Ensure script runs from its directory
-cd "$(dirname "$0")"
+# Welcome message
+echo "Welcome to the YouTube Bot Installer!"
+echo "This script will install the bot and all required dependencies."
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
+# Step 1: Update and upgrade Termux packages
+echo "Updating and upgrading Termux packages..."
+pkg update && pkg upgrade -y
 
-# Trap Ctrl+C (SIGINT) to gracefully exit the bot
-trap 'echo "Exiting bot..."; exit 0' SIGINT
+# Step 2: Install required tools
+echo "Installing dependencies..."
+pkg install -y python ffmpeg termux-api git curl
 
-# Function to fix SSL issues in Termux
-fix_ssl_issues() {
-    echo "Fixing SSL issues..."
+# Step 3: Install yt-dlp
+echo "Installing yt-dlp..."
+pip install yt-dlp
 
-    # Update and upgrade Termux packages
-    pkg update -y && pkg upgrade -y
+# Step 4: Define the output directories
+audio_dir="/storage/emulated/0/Music/Songs"
+video_dir="/storage/emulated/0/Videos"
+mkdir -p "$audio_dir"  # Create the audio directory if it doesn't exist
+mkdir -p "$video_dir"  # Create the video directory if it doesn't exist
 
-    # Install necessary dependencies for SSL support
-    pkg install openssl python -y
+# Step 5: Download the bot script
+echo "Downloading the YouTube bot script..."
+curl -o ~/youtube_bot.sh https://raw.githubusercontent.com/User1990i/YouTube-bot/main/youtube_bot.sh
 
-    # Reinstall pip to ensure SSL support
-    python -m ensurepip --upgrade
-    pip install --upgrade pip
+# Step 6: Make the bot script executable
+echo "Making the bot script executable..."
+chmod +x ~/youtube_bot.sh
 
-    echo "SSL issues fixed."
-}
+# Step 7: Add the bot to .bashrc for easy access
+echo "Adding the bot to .bashrc..."
+if ! grep -q "alias youtube-bot" ~/.bashrc; then
+    echo 'alias youtube-bot="~/youtube_bot.sh"' >> ~/.bashrc
+fi
 
-# Ensure yt-dlp is installed
-install_yt_dlp() {
-    if ! command_exists yt-dlp; then
-        echo "yt-dlp is not installed. Installing..."
+# Step 8: Reload .bashrc
+echo "Reloading .bashrc..."
+source ~/.bashrc
 
-        # Check if SSL issues exist
-        if ! python -c "import ssl" 2>/dev/null; then
-            echo "SSL module is missing. Fixing..."
-            fix_ssl_issues
-        fi
+# Step 9: Grant storage permissions
+echo "Granting storage permissions..."
+termux-setup-storage
 
-        # Install yt-dlp and its dependencies
-        pip install yt-dlp mutagen ffmpeg-python
-        echo "yt-dlp installed successfully."
-    fi
-}
+# Completion message
+echo "Installation complete!"
+echo "You can now run the bot by typing 'youtube-bot' in Termux."
 
-# Function to download YouTube content with sanitized file names
-download_content() {
-    local url=$1
-    local format=$2
-    local output_dir=$3
-    local file_format=$4
+# Start YouTube Bot
+echo -e "${RED}YouTube Downloader Bot is running.${NC}"
+echo "Choose an option:"
+echo "1. Download Audio (FLAC format)"
+echo "2. Download Video (choose quality)"
+read -p "Enter your choice (1 or 2): " choice
 
-    # Create the output directory if it doesn't exist
-    mkdir -p "$output_dir"
+# Check the user's choice
+if [[ $choice == "1" ]]; then
+    echo "You selected to download audio in FLAC format."
+    echo "Paste a YouTube link and press Enter to download the song."
 
-    echo "Downloading..."
-    
-    # Use yt-dlp with restricted file names and truncated titles
-    yt-dlp -f "$format" --restrict-filenames --parse-metadata "title:%(title).50s" -o "$output_dir/%(title)s.$file_format" "$url"
-    echo "Download complete!"
-}
-
-# Function to download a playlist
-download_playlist() {
-    read -p "Enter playlist URL: " url
-
-    # Extract playlist name and sanitize it
-    local playlist_name=$(yt-dlp --flat-playlist --get-title "$url" | head -n 1)
-    playlist_name=$(echo "$playlist_name" | tr -d '\n' | tr -cd '[:alnum:]._- ' | cut -c 1-50)
-    local output_dir="/storage/emulated/0/Music/Songs/$playlist_name"
-
-    # Prompt user for format choice
-    echo "Select format:"
-    echo "1. FLAC (Audio)"
-    echo "2. MP4 (Video)"
-    read -p "Choose an option (1/2): " format_choice
-
-    # Create the output directory
-    mkdir -p "$output_dir"
-
-    if [[ $format_choice == 1 ]]; then
-        # FLAC download
-        echo "Downloading playlist in FLAC format..."
-        yt-dlp -f "bestaudio --extract-audio --audio-format flac" --restrict-filenames --parse-metadata "title:%(title).50s" -o "$output_dir/%(title)s.flac" "$url"
-
-        # Prompt to merge audio
-        read -p "Merge audio files into one? (Y/N): " merge_choice
-        if [[ $merge_choice == "Y" || $merge_choice == "y" ]]; then
-            echo "Merging audio files..."
-
-            # Merge all FLAC files into one
-            local merged_file="$output_dir/${playlist_name}_Merged.flac"
-            find "$output_dir" -name "*.flac" -exec ffmpeg -i "concat:$(echo {} | paste -sd '|' -)" -c copy "$merged_file" \;
-
-            # Delete individual singles after merging
-            find "$output_dir" -name "*.flac" ! -name "*_Merged.flac" -delete
-
-            echo "Merged audio saved as: $merged_file"
-        else
-            echo "Individual FLAC files saved in: $output_dir"
-        fi
-    elif [[ $format_choice == 2 ]]; then
-        # MP4 download
-        echo "Downloading playlist in MP4 format..."
-        yt-dlp -f "best" --restrict-filenames --parse-metadata "title:%(title).50s" -o "$output_dir/%(title)s.mp4" "$url"
-        echo "MP4 files saved in: $output_dir"
-    else
-        echo "Invalid option selected. Exiting..."
-        return
-    fi
-}
-
-# Function to check for updates
-update_bot() {
-    echo "Updating yt-dlp..."
-    pip install --upgrade yt-dlp
-    echo "Update complete!"
-}
-
-# Function to display menu
-show_menu() {
+    # Infinite loop for audio downloads
     while true; do
-        echo "YouTube Downloader Bot"
-        echo "1. Download Audio (FLAC)"
-        echo "2. Download Video (MP4)"
-        echo "3. Download Playlist"
-        echo "4. Check for Updates"
-        echo "5. Exit"
-        read -p "Choose an option: " choice
+        read -p "> " youtube_link
 
-        case $choice in
-            1) 
-                read -p "Enter video URL: " url
-                download_content "$url" "bestaudio --extract-audio --audio-format flac" "/storage/emulated/0/Music/Songs" "flac"
-                ;;
-            2) 
-                read -p "Enter video URL: " url
-                download_content "$url" "best" "/storage/emulated/0/Videos" "mp4"
-                ;;
-            3) 
-                download_playlist
-                ;;
-            4) 
-                update_bot
-                ;;
-            5) 
-                echo "Exiting..."
-                exit 0
-                ;;
-            *) 
-                echo "Invalid option, try again."
-                ;;
-        esac
+        # Check if the input is a valid YouTube link
+        if [[ $youtube_link == *"youtube.com"* || $youtube_link == *"youtu.be"* ]]; then
+            echo "Downloading audio in FLAC format from the provided link..."
+            
+            # Download the audio using yt-dlp
+            yt-dlp -x --audio-format flac --ffmpeg-location $(which ffmpeg) -o "$audio_dir/%(title)s.%(ext)s" "$youtube_link"
+            
+            # Check if the download was successful
+            if [ $? -eq 0 ]; then
+                echo "Download completed successfully!"
+                echo "The song has been saved in: $audio_dir"
+            else
+                echo "An error occurred while downloading the song. Please try again."
+            fi
+        else
+            echo "Invalid input. Please paste a valid YouTube link."
+        fi
     done
-}
 
-# Run the menu
-install_yt_dlp
-show_menu
+elif [[ $choice == "2" ]]; then
+    echo "You selected to download video. Choose a quality:"
+    echo "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
+    read -p "Enter your preferred quality (e.g., 720p, 1080p, best): " quality
+
+    echo "Paste a YouTube link and press Enter to download the video."
+    
+    # Infinite loop for video downloads
+    while true; do
+        read -p "> " youtube_link
+
+        # Check if the input is a valid YouTube link
+        if [[ $youtube_link == *"youtube.com"* || $youtube_link == *"youtu.be"* ]]; then
+            echo "Downloading video in $quality quality from the provided link..."
+            
+            # Download the video using yt-dlp
+            yt-dlp -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$youtube_link"
+            
+            # Check if the download was successful
+            if [ $? -eq 0 ]; then
+                echo "Download completed successfully!"
+                echo "The video has been saved in: $video_dir"
+            else
+                echo "An error occurred while downloading the video. Please try again."
+            fi
+        else
+            echo "Invalid input. Please paste a valid YouTube link."
+        fi
+    done
+
+else
+    echo "Invalid choice. Please restart the bot and enter 1 or 2."
+fi
