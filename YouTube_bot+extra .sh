@@ -1,26 +1,5 @@
 #!/bin/bash
 
-# Welcome message
-echo "Welcome to the YouTube Bot Installer!"
-echo "This script will install all required dependencies and create the YouTube bot script."
-
-# Step 1: Update and upgrade Termux packages
-echo "Updating and upgrading Termux packages..."
-pkg update && pkg upgrade -y
-
-# Step 2: Install required tools
-echo "Installing dependencies..."
-pkg install -y python ffmpeg termux-api git curl
-
-# Step 3: Install yt-dlp using pip
-echo "Installing yt-dlp..."
-pip install yt-dlp
-
-# Step 4: Create the YouTube bot script
-echo "Creating the YouTube bot script..."
-cat << 'EOF' > ~/youtube_bot.sh
-#!/bin/bash
-
 # Define the output directories
 audio_dir="/storage/emulated/0/Music/Songs"
 video_dir="/storage/emulated/0/Videos"
@@ -84,26 +63,3 @@ elif [[ $choice == "2" ]]; then
 else
     echo "Invalid choice. Please restart the bot and enter 1 or 2."
 fi
-EOF
-
-# Step 5: Make the bot script executable
-echo "Making the bot script executable..."
-chmod +x ~/youtube_bot.sh
-
-# Step 6: Add the bot to .bashrc for easy access
-echo "Adding the bot to .bashrc..."
-if ! grep -q "alias youtube-bot" ~/.bashrc; then
-    echo 'alias youtube-bot="~/youtube_bot.sh"' >> ~/.bashrc
-fi
-
-# Step 7: Reload .bashrc
-echo "Reloading .bashrc..."
-source ~/.bashrc
-
-# Step 8: Grant storage permissions
-echo "Granting storage permissions..."
-termux-setup-storage
-
-# Completion message
-echo "Installation complete!"
-echo "You can now run the bot by typing 'youtube-bot' in Termux."
