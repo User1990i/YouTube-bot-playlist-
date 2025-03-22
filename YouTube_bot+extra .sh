@@ -41,11 +41,7 @@ show_progress() {
 # Show banner with ASCII art
 show_banner() {
     clear
-    echo -e "${BOLD_RED}==========================================="
-    echo -e " YouTube Downloader Bot - Version 1.4 "
-    echo -e "        Di Stable Build v1        "
-    echo -e "==========================================="
-    echo -e "${NC}"
+    echo -e "${BOLD_RED}"
     echo -e "⠐⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠂"
     echo -e "⠀⢹⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡇⠀"
     echo -e "⠀⢸⣿⣄⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⣠⣿⡇⠀"
@@ -66,7 +62,7 @@ show_banner() {
     echo -e "⠀⠀⠀⠀⠀⠘⣿⣷⣻⣿⢷⢶⢶⢶⢆⣗⡿⣇⣷⣿⡿⠀⠀⠀⠀⠀"
     echo -e "⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣛⣭⣭⣭⣭⣭⣻⣿⡿⠛⠀⠀⠀⠀⠀⠀"
     echo -e "⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⠟⠛⠛⠛⠻⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀"
-    echo -e ""
+    echo -e "" 
 }
 
 # Go Back function
@@ -77,6 +73,11 @@ go_back() {
 
 # Main menu
 main_menu() {
+    clear
+    # Display bot name and version above the options menu
+    echo -e "${BOLD_RED}YouTube Downloader Bot"
+    echo -e "Build v1        "
+    echo -e "${NC}"
     show_banner
     echo -e "${BOLD_RED}Choose an option:${NC}"
     echo -e "1. Download Audio (FLAC format)"
