@@ -140,8 +140,7 @@ fi
 
 # Function to download channel content
 download_channel() {
-    show_banner
-    echo -e "${BOLD_RED}Download YouTube Channel Content.${NC}"
+    echo -e "\e[32mDownload YouTube Channel Content.\e[0m"
     echo -e "Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
 
     while true; do
@@ -149,7 +148,7 @@ download_channel() {
 
         # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
         if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
-            echo -e "${RED}Invalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.${NC}"
+            echo -e "\e[31mInvalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.\e[0m"
             continue
         fi
 
@@ -159,7 +158,7 @@ download_channel() {
         # Attempt to fetch the channel name
         channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
         if [[ -z "$channel_name" ]]; then
-            echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
+            echo -e "\e[31mFailed to fetch channel name. Please ensure the Channel ID is correct.\e[0m"
             echo -e "Would you like to manually enter the channel name? (y/n)"
             read -p "> " manual_input
             if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
@@ -167,7 +166,7 @@ download_channel() {
                 read -p "> " channel_name
                 channel_name=$(sanitize_folder_name "$channel_name")
             else
-                echo -e "${RED}Operation canceled. Returning to the main menu.${NC}"
+                echo -e "\e[31mOperation canceled. Returning to the main menu.\e[0m"
                 go_back
             fi
         else
@@ -175,8 +174,14 @@ download_channel() {
         fi
 
         # Create the channel folder
-        channel_folder="$channel_dir/$channel_name"
+        channel_folder="$base_dir/Channels/$channel_name"
         mkdir -p "$channel_folder"
+
+        # Check if folder creation was successful
+        if [[ ! -d "$channel_folder" ]]; then
+            echo -e "\e[31mError: Could not create channel folder. Please check your storage permissions.\e[0m"
+            exit 1
+        fi
 
         echo -e "Download as:"
         echo -e "1. Audio (FLAC format)"
@@ -193,18 +198,15 @@ download_channel() {
             yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         *)
-            echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
+            echo -e "\e[31mInvalid choice. Please select 1 or 2.\e[0m"
             continue
             ;;
         esac
 
         # Confirm the download location
-        echo -e "${GREEN}Content downloaded to: $channel_folder${NC}"
+        echo -e "\e[32mContent downloaded to: $channel_folder\e[0m"
         break
     done
-    echo -e "${GREEN}Download completed!${NC}"
+    echo -e "\e[32mDownload completed!\e[0m"
     go_back
 }
-
-# Start script
-main_menu
