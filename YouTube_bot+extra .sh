@@ -116,26 +116,20 @@ elif [[ $choice == "3" ]]; then
         mkdir -p "$playlist_folder"
         echo "Playlist folder created: $playlist_folder"
         if [[ $playlist_choice == "1" ]]; then
-            # Create a subfolder for audio files
-            audio_playlist_dir="$playlist_folder/songs"
-            mkdir -p "$audio_playlist_dir"
             echo "Downloading playlist '$playlist_name' as audio in FLAC format..."
-            yt-dlp --flat-playlist --lazy-playlist --progress -x --audio-format flac -o "$audio_playlist_dir/%(title)s.%(ext)s" "$playlist_link"
+            yt-dlp --flat-playlist --lazy-playlist --progress -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
             if [ $? -eq 0 ]; then
                 echo "Playlist download completed successfully!"
-                echo "The songs have been saved in: $audio_playlist_dir"
+                echo "The songs have been saved in: $playlist_folder"
             else
                 echo "An error occurred while downloading the playlist. Please try again."
             fi
         elif [[ $playlist_choice == "2" ]]; then
-            # Create a subfolder for video files
-            video_playlist_dir="$playlist_folder/videos"
-            mkdir -p "$video_playlist_dir"
             echo "Downloading playlist '$playlist_name' as video in MP4 format..."
-            yt-dlp --flat-playlist --lazy-playlist --progress -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$video_playlist_dir/%(title)s.%(ext)s" "$playlist_link"
+            yt-dlp --flat-playlist --lazy-playlist --progress -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
             if [ $? -eq 0 ]; then
                 echo "Playlist download completed successfully!"
-                echo "The videos have been saved in: $video_playlist_dir"
+                echo "The videos have been saved in: $playlist_folder"
             else
                 echo "An error occurred while downloading the playlist. Please try again."
             fi
