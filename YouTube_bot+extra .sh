@@ -92,7 +92,7 @@ download_video() {
     go_back
 }
 
-# Function to download a playlist (reverted to Version 1.3)
+# Function to download a playlist (Fixed Syntax)
 download_playlist() {
     show_banner
     echo -e "${BOLD_RED}Download a YouTube Playlist.${NC}"
