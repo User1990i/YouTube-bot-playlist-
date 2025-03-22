@@ -54,7 +54,7 @@ show_banner() {
     echo -e "" 
     echo -e "${BOLD_RED}==========================================="
     echo -e "          YouTube BOT         "
-    echo -e "          STBV3              "
+    echo -e "          NEW STABLE          "
     echo -e "==========================================="
 }
 
