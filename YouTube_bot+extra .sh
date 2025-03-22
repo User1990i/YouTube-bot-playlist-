@@ -208,4 +208,49 @@ download_playlist() {
 # Function to download channel content
 download_channel() {
     show_banner
-    echo -e "${B
+    echo -e "${BOLD_RED}You selected to download channel content.${NC}"
+    echo -e "Choose an option:"
+    echo -e "1. Download Channel Audio (FLAC format)"
+    echo -e "2. Download Channel Video (MP4 format)"
+    read -p "Enter your choice (1 or 2): " channel_choice
+    echo -e "Paste a YouTube channel link and press Enter to download the content."
+    read -p "> " channel_link
+
+    if [[ $channel_link == *"youtube.com/channel"* ]]; then
+        echo -e "${GREEN}Fetching channel metadata. Please wait...${NC}"
+        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_link")
+        channel_name=$(sanitize_folder_name "$channel_name")
+        channel_folder="$channel_dir/$channel_name"
+        mkdir -p "$channel_folder"
+        echo -e "${GREEN}Channel folder created: $channel_folder${NC}"
+        
+        if [[ $channel_choice == "1" ]]; then
+            echo -e "${GREEN}Downloading channel '$channel_name' as audio in FLAC format...${NC}"
+            yt-dlp --yes-playlist -x --audio-format flac -o "$channel_folder/%(title)s.%(ext)s" "$channel_link"
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}Channel audio download completed successfully!${NC}"
+                echo -e "The audio files have been saved in: $channel_folder"
+            else
+                echo -e "${RED}An error occurred while downloading the channel audio. Please try again.${NC}"
+            fi
+            go_back
+        elif [[ $channel_choice == "2" ]]; then
+            echo -e "${GREEN}Downloading channel '$channel_name' as video in MP4 format...${NC}"
+            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_link"
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}Channel video download completed successfully!${NC}"
+                echo -e "The videos have been saved in: $channel_folder"
+            else
+                echo -e "${RED}An error occurred while downloading the channel videos. Please try again.${NC}"
+            fi
+            go_back
+        else
+            echo -e "${RED}Invalid choice. Please restart the bot and enter 1 or 2.${NC}"
+        fi
+    else
+        echo -e "${RED}Invalid input. Please paste a valid YouTube channel link.${NC}"
+    fi
+}
+
+# Start the bot by calling the main menu function
+main_menu
