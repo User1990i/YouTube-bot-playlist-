@@ -128,9 +128,14 @@ download_playlist() {
     
     if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
         echo -e "${GREEN}Fetching playlist metadata. Please wait...${NC}"
+        
+        # Sanitize and get the playlist name
         playlist_name=$(yt-dlp --get-filename -o "%(playlist_title)s" "$playlist_link")
         playlist_name=$(sanitize_folder_name "$playlist_name")
+        
         playlist_folder="$playlist_dir/$playlist_name"
+        
+        # Create the playlist folder
         mkdir -p "$playlist_folder"
         echo -e "${GREEN}Playlist folder created: $playlist_folder${NC}"
         
