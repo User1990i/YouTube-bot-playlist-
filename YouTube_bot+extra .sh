@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# YouTube Downloader Bot - Version 1.1
+script_version="1.1"
+
 # Define the output directories (No spaces in path)
 base_dir="/storage/emulated/0/Music_Vids"
 audio_dir="$base_dir/Songs"
@@ -14,8 +17,8 @@ sanitize_folder_name() {
     echo "${sanitized:0:50}"  # Trim to 50 characters
 }
 
-# Welcome message
-echo -e "\e[32mYouTube Downloader Bot is running.\e[0m"
+# Display script version
+echo -e "\e[32mYouTube Downloader Bot - Version $script_version\e[0m"
 echo "Choose an option:"
 echo -e "\e[34m1. Download Audio (FLAC format)\e[0m"
 echo -e "\e[34m2. Download Video (choose quality)\e[0m"
@@ -78,7 +81,7 @@ elif [[ $choice == "3" ]]; then
 
     if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
         echo "Fetching playlist metadata..."
-        playlist_name=$(yt-dlp --get-filename -o "%(playlist_title)s" "$playlist_link")
+        playlist_name=$(yt-dlp --get-filename -o "%(playlist_title)s" "$playlist_link" | head -n 1)  # Fix repeated lines
         playlist_name=$(sanitize_folder_name "$playlist_name")
         playlist_folder="$playlist_dir/$playlist_name"
         mkdir -p "$playlist_folder"
