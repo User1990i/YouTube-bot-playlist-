@@ -100,7 +100,7 @@ download_playlist() {
     echo -e "2. Video (MP4 format)"
     read -p "Enter your choice (1 or 2): " playlist_choice
     echo -e "Paste the YouTube playlist link and press Enter."
-    read -p "> " playlist_link  # <-- Fixed line
+    read -p "> " playlist_link
 
     # Use yt-dlp to get the playlist name
     playlist_name=$(yt-dlp --get-filename -o "%(playlist_title)s" "$playlist_link")
@@ -109,9 +109,9 @@ download_playlist() {
     mkdir -p "$playlist_folder"
 
     if [[ $playlist_choice == "1" ]]; then
-        yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+        yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%titles.%exts" "$playlist_link"
     else
-        yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+        yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%titles.%exts" "$playlist_link"
     fi
 
     echo -e "${GREEN}Playlist download completed!${NC}"
@@ -159,10 +159,10 @@ download_channel() {
 
         case $media_choice in
         1) 
-            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%titles.%exts" "$channel_url"
             ;;
         2) 
-            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%titles.%exts" "$channel_url"
             ;;
         *)
             echo -e "${RED}Invalid choice.${NC}"
