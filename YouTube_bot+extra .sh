@@ -16,11 +16,9 @@ sanitize_folder_name() {
     local input="$1"
     # Remove unwanted characters, including newlines and spaces
     local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-' | sed 's/[[:space:]]\+/_/g')
-    # Capitalize the first letter and ensure other letters are lowercase
-    sanitized=$(echo "$sanitized" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
     # Replace any newline or carriage return with an underscore
     sanitized=$(echo "$sanitized" | tr -d '\n\r')
-    echo "${sanitized:0:50}"  # Trim to 50 characters
+    echo "${sanitized^}"  # Capitalize the first letter to fix the double naming issue and trim to 50 characters
 }
 
 # Display script version
