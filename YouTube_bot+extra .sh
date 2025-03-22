@@ -100,7 +100,7 @@ download_playlist() {
     echo -e "2. Video (MP4 format)"
     read -p "Enter your choice (1 or 2): " playlist_choice
     echo -e "Paste the YouTube playlist link and press Enter."
-    read -p "> " playlist_link"
+    read -p "> " playlist_link  # <-- Fixed line
 
     # Use yt-dlp to get the playlist name
     playlist_name=$(yt-dlp --get-filename -o "%(playlist_title)s" "$playlist_link")
