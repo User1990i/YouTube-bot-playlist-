@@ -14,8 +14,13 @@ mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"  # Create nece
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
+    # Remove unwanted characters, including newlines and spaces
     local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-' | sed 's/[[:space:]]\+/_/g')
-    echo "${sanitized^}"  # Capitalize the first letter to avoid double naming (e.g., Kay instead of kay)
+    # Capitalize the first letter and ensure other letters are lowercase
+    sanitized=$(echo "$sanitized" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
+    # Replace any newline or carriage return with an underscore
+    sanitized=$(echo "$sanitized" | tr -d '\n\r')
+    echo "${sanitized:0:50}"  # Trim to 50 characters
 }
 
 # Display script version
