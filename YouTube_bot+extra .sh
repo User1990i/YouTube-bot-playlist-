@@ -8,7 +8,7 @@ display_banner() {
     echo -e "\e[38;5;203m██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══██║██╔══╝  ██╔══██╗\e[0m"  # Salmon Red
     echo -e "\e[38;5;204m██████╔╝   ██║   ███████╗██║  ██║███████╗██║  ██║\e[0m"  # Tomato Red
     echo -e "\e[38;5;209m╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝\e[0m"  # Coral Red
-    echo -e "\e[38;5;217mYouTube Downloader Bot v1.F - Welcome!\e[0m"     # Light Coral
+    echo -e "\e[38;5;217mYouTube Downloader Bot v1.0 - Welcome!\e[0m"     # Light Coral
 }
 
 # Display the banner
@@ -25,20 +25,38 @@ command_exists() {
 # Trap Ctrl+C (SIGINT) to gracefully exit the bot
 trap 'echo "Exiting bot..."; exit 0' SIGINT
 
-# Ensure yt-dlp is installed
-if ! command_exists yt-dlp; then
-    echo "yt-dlp is not installed. Installing..."
-    pkg update -y && pkg install yt-dlp -y
-fi
+# Function to fix SSL issues in Termux
+fix_ssl_issues() {
+    echo "Fixing SSL issues..."
 
-# Function to sanitize and truncate playlist names
-sanitize_name() {
-    local name="$1"
-    # Replace newlines, tabs, and other special characters with underscores
-    name=$(echo "$name" | tr -d '\n' | tr -cd '[:alnum:]._- ')
-    # Truncate the name to 50 characters
-    name=$(echo "$name" | cut -c 1-50)
-    echo "$name"
+    # Update and upgrade Termux packages
+    pkg update -y && pkg upgrade -y
+
+    # Install necessary dependencies for SSL support
+    pkg install openssl python -y
+
+    # Reinstall pip to ensure SSL support
+    python -m ensurepip --upgrade
+    pip install --upgrade pip
+
+    echo "SSL issues fixed."
+}
+
+# Ensure yt-dlp is installed
+install_yt_dlp() {
+    if ! command_exists yt-dlp; then
+        echo "yt-dlp is not installed. Installing..."
+
+        # Check if SSL issues exist
+        if ! python -c "import ssl" 2>/dev/null; then
+            echo "SSL module is missing. Fixing..."
+            fix_ssl_issues
+        fi
+
+        # Install yt-dlp and its dependencies
+        pip install yt-dlp mutagen ffmpeg-python
+        echo "yt-dlp installed successfully."
+    fi
 }
 
 # Function to download YouTube content with sanitized file names
@@ -64,7 +82,7 @@ download_playlist() {
 
     # Extract playlist name and sanitize it
     local playlist_name=$(yt-dlp --flat-playlist --get-title "$url" | head -n 1)
-    playlist_name=$(sanitize_name "$playlist_name")
+    playlist_name=$(echo "$playlist_name" | tr -d '\n' | tr -cd '[:alnum:]._- ' | cut -c 1-50)
     local output_dir="/storage/emulated/0/Music/Songs/$playlist_name"
 
     # Prompt user for format choice
@@ -111,7 +129,7 @@ download_playlist() {
 # Function to check for updates
 update_bot() {
     echo "Updating yt-dlp..."
-    yt-dlp -U
+    pip install --upgrade yt-dlp
     echo "Update complete!"
 }
 
@@ -153,4 +171,5 @@ show_menu() {
 }
 
 # Run the menu
+install_yt_dlp
 show_menu
