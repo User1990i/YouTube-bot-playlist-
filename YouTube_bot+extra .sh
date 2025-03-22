@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Define the output directories
+# Define output directories
 base_dir="/storage/emulated/0/Music_Vids"
 audio_dir="$base_dir/Songs"
 video_dir="$base_dir/Videos"
@@ -12,17 +12,18 @@ mkdir -p "$video_dir"
 mkdir -p "$playlist_dir"  
 mkdir -p "$channel_dir"  
 
-# YouTube colors
+# Colors for output
 RED='\033[0;31m'
-WHITE='\033[1;37m'
-BOLD_RED='\033[1;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
 NC='\033[0m'  # No color
 
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
+    # Replace special characters with underscores and trim spaces
     local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-/' | sed 's/[[:space:]]\+/_/g')
+    # Trim to a maximum length of 50 characters
     sanitized=${sanitized:0:50}
     echo "$sanitized"
 }
@@ -30,32 +31,10 @@ sanitize_folder_name() {
 # Show banner with ASCII art
 show_banner() {
     clear
-    echo -e "${BOLD_RED}"
-    echo -e "⠐⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠂"
-    echo -e "⠀⢹⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡇⠀"
-    echo -e "⠀⢸⣿⣄⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⣠⣿⡇⠀"
-    echo -e "⠀⠸⣿⣿⣷⣦⣀⡴⢶⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⣴⣾⣿⣿⠇⠀"
-    echo -e "⠀⠀⢻⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣇⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀"
-    echo -e "⠀⠀⣠⣻⡿⠿⢿⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣻⣥⠀⠀"
-    echo -e "⠀⠀⣿⣿⣿⣿⣿⣿⣿⡿⣟⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀"
-    echo -e "⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⡹⡜⠋⡾⣼⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀"
-    echo -e "⠀⠀⣿⣻⣾⣭⣝⣛⣛⣛⣛⣃⣿⣾⣇⣛⣛⣛⣛⣯⣭⣷⣿⣿⡇⠀"
-    echo -e "⠀⠰⢿⣿⣎⠙⠛⢻⣿⡿⠿⠟⣿⣿⡟⠿⠿⣿⡛⠛⠋⢹⣿⡿⢳⠀"
-    echo -e "⠀⠘⣦⡙⢿⣦⣀⠀⠀⠀⢀⣼⣿⣿⣳⣄⠀⠀⠀⢀⣠⡿⢛⣡⡏⠀"
-    echo -e "⠀⠀⠹⣟⢿⣾⣿⣿⣿⣿⣿⣧⣿⣿⣧⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠀⠀"
-    echo -e "⠀⠀⢰⣿⣣⣿⣭⢿⣿⣱⣶⣿⣿⣿⣿⣿⣿⣷⣶⢹⣿⣭⣻⣶⣿⣿⠀⠀"
-    echo -e "⠀⠀⠈⣿⢿⣿⣿⠏⣿⣾⣛⠿⣿⣿⣿⠟⣻⣾⡏⢿⣿⣯⡿⡏⠀⠀"
-    echo -e "⠀⠀⠤⠾⣟⣿⡁⠘⢨⣟⢻⡿⠾⠿⠾⢿⡛⣯⠘⠀⣸⣽⡛⠲⠄⠀"
-    echo -e "⠀⠀⠀⠀⠘⣿⣧⠀⠸⠃⠈⠙⠛⠛⠉⠈⠁⠹⠀⠀⣿⡟⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⢻⣿⣶⣀⣠⠀⠀⠀⠀⠀⠀⢠⡄⡄⣦⣿⠃⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠘⣿⣷⣻⣿⢷⢶⢶⢶⢆⣗⡿⣇⣷⣿⡿⠀⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣛⣭⣭⣭⣭⣭⣻⣿⡿⠛⠀⠀⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⠟⠛⠛⠛⠻⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀"
-    echo -e "" 
-    echo -e "${BOLD_RED}==========================================="
-    echo -e "          YouTube BOT         "
-    echo -e "          NEW STABLE          "
-    echo -e "==========================================="
+    echo -e "${YELLOW}"
+    echo -e "YouTube Downloader Bot - NEW STABLE"
+    echo -e "==================================="
+    echo -e "${NC}"
 }
 
 # Go Back function
@@ -68,7 +47,7 @@ go_back() {
 main_menu() {
     clear
     show_banner
-    echo -e "${BOLD_RED}Choose an option:${NC}"
+    echo -e "${YELLOW}Choose an option:${NC}"
     echo -e "1. Download Audio (FLAC format)"
     echo -e "2. Download Video (choose quality)"
     echo -e "3. Download Playlist (Audio or Video)"
@@ -92,7 +71,7 @@ main_menu() {
 # Function to download audio
 download_audio() {
     show_banner
-    echo -e "${BOLD_RED}You selected to download audio in FLAC format.${NC}"
+    echo -e "${YELLOW}You selected to download audio in FLAC format.${NC}"
     echo -e "Paste a YouTube link and press Enter to download the song."
     while true; do
         read -p "> " youtube_link
@@ -116,7 +95,7 @@ download_audio() {
 # Function to download video
 download_video() {
     show_banner
-    echo -e "${BOLD_RED}You selected to download video.${NC}"
+    echo -e "${YELLOW}You selected to download video.${NC}"
     echo -e "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
     read -p "Enter your preferred quality (e.g., 720p, best): " quality
     echo -e "Paste a YouTube link and press Enter to download the video."
@@ -139,10 +118,10 @@ download_video() {
     go_back
 }
 
-# Function to download playlist (Reverted to v1.3 stable)
+# Function to download playlist
 download_playlist() {
     show_banner
-    echo -e "${BOLD_RED}You selected to download a playlist.${NC}"
+    echo -e "${YELLOW}You selected to download a playlist.${NC}"
     echo -e "Choose an option:"
     echo -e "1. Download Playlist as Audio (FLAC format)"
     echo -e "2. Download Playlist as Video (MP4 format)"
@@ -153,23 +132,25 @@ download_playlist() {
     if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
         echo -e "${GREEN}Fetching playlist metadata. Please wait...${NC}"
         
-        # Extract playlist name safely
+        # Fetch the playlist name safely
         playlist_name=$(yt-dlp --get-title "$playlist_link" 2>/dev/null | head -n 1)
         if [[ -z "$playlist_name" ]]; then
             echo -e "${RED}Failed to fetch playlist metadata. Please check the link.${NC}"
             go_back
         fi
         
+        # Sanitize the playlist name
         playlist_name=$(sanitize_folder_name "$playlist_name")
         playlist_folder="$playlist_dir/$playlist_name"
-        mkdir -p "$playlist_folder"
-        echo -e "${GREEN}Playlist folder created: $playlist_folder${NC}"
         
-        # Permission check before writing logs
+        # Create the playlist folder
+        mkdir -p "$playlist_folder"
         if [[ ! -w "$playlist_folder" ]]; then
             echo -e "${RED}Error: No write permission for $playlist_folder${NC}"
             go_back
         fi
+        
+        echo -e "${GREEN}Playlist folder created: $playlist_folder${NC}"
         
         if [[ $playlist_choice == "1" ]]; then
             echo -e "${GREEN}Downloading playlist '$playlist_name' as audio in FLAC format...${NC}"
@@ -192,9 +173,9 @@ download_playlist() {
 # Function to download channel content
 download_channel() {
     show_banner
-    echo -e "${BOLD_RED}Download YouTube Channel Content.${NC}"
+    echo -e "${YELLOW}Download YouTube Channel Content.${NC}"
     echo -e "Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
-
+    
     while true; do
         read -p "> " channel_id
 
