@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.3
-script_version="1.3"
+# YouTube Downloader Bot - Version 1.5
+script_version="1.5"
 
 # Define output directories (No spaces in paths)
 base_dir="/storage/emulated/0/Music_Vids"
@@ -14,11 +14,8 @@ mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"  # Create nece
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
-    # Remove unwanted characters, including newlines and spaces
     local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-' | sed 's/[[:space:]]\+/_/g')
-    # Replace any newline or carriage return with an underscore
-    sanitized=$(echo "$sanitized" | tr -d '\n\r')
-    echo "${sanitized:0:50}"  # Trim to 50 characters
+    echo "${sanitized^}"  # Capitalize the first letter to avoid double naming (e.g., Kay instead of kay)
 }
 
 # Display script version
