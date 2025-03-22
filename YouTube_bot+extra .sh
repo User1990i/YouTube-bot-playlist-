@@ -145,7 +145,7 @@ download_channel() {
     show_banner
     echo -e "${BOLD_RED}Download YouTube Channel Content.${NC}"
     echo -e "Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
-    
+
     while true; do
         read -p "> " channel_id
 
@@ -199,6 +199,9 @@ download_channel() {
             continue
             ;;
         esac
+
+        # Confirm the download location
+        echo -e "${GREEN}Content downloaded to: $channel_folder${NC}"
         break
     done
     echo -e "${GREEN}Download completed!${NC}"
