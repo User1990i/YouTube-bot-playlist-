@@ -22,17 +22,18 @@ cat << 'EOF' > ~/youtube_bot.sh
 #!/bin/bash
 
 # Define the output directories
-audio_dir="/storage/emulated/0/Music/Songs"
-video_dir="/storage/emulated/0/Videos"
-playlist_dir="/storage/emulated/0/Playlists"
+base_dir="/storage/emulated/0/Music & Vids"
+audio_dir="$base_dir/Songs"
+video_dir="$base_dir/Videos"
+playlist_dir="$base_dir/playlists"
 mkdir -p "$audio_dir"  # Create the audio directory if it doesn't exist
 mkdir -p "$video_dir"  # Create the video directory if it doesn't exist
-mkdir -p "$playlist_dir"  # Create the playlist directory if it doesn't exist
+mkdir -p "$playlist_dir"  # Create the playlists directory if it doesn't exist
 
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
-    # Remove newlines and duplicate lines
+    # Remove duplicate lines
     local sanitized=$(echo "$input" | awk '!seen[$0]++')
     # Replace special characters with underscores
     sanitized=$(echo "$sanitized" | tr -cd '[:alnum:][:space:]._-/' | sed 's/[[:space:]]\+/_/g')
@@ -115,20 +116,26 @@ elif [[ $choice == "3" ]]; then
         mkdir -p "$playlist_folder"
         echo "Playlist folder created: $playlist_folder"
         if [[ $playlist_choice == "1" ]]; then
+            # Create a subfolder for audio files
+            audio_playlist_dir="$playlist_folder/songs"
+            mkdir -p "$audio_playlist_dir"
             echo "Downloading playlist '$playlist_name' as audio in FLAC format..."
-            yt-dlp --flat-playlist --lazy-playlist --progress -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+            yt-dlp --flat-playlist --lazy-playlist --progress -x --audio-format flac -o "$audio_playlist_dir/%(title)s.%(ext)s" "$playlist_link"
             if [ $? -eq 0 ]; then
                 echo "Playlist download completed successfully!"
-                echo "The songs have been saved in: $playlist_folder"
+                echo "The songs have been saved in: $audio_playlist_dir"
             else
                 echo "An error occurred while downloading the playlist. Please try again."
             fi
         elif [[ $playlist_choice == "2" ]]; then
+            # Create a subfolder for video files
+            video_playlist_dir="$playlist_folder/videos"
+            mkdir -p "$video_playlist_dir"
             echo "Downloading playlist '$playlist_name' as video in MP4 format..."
-            yt-dlp --flat-playlist --lazy-playlist --progress -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+            yt-dlp --flat-playlist --lazy-playlist --progress -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$video_playlist_dir/%(title)s.%(ext)s" "$playlist_link"
             if [ $? -eq 0 ]; then
                 echo "Playlist download completed successfully!"
-                echo "The videos have been saved in: $playlist_folder"
+                echo "The videos have been saved in: $video_playlist_dir"
             else
                 echo "An error occurred while downloading the playlist. Please try again."
             fi
