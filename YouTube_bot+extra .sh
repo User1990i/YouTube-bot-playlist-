@@ -3,15 +3,18 @@
 # Define the output directories
 audio_dir="/storage/emulated/0/Music/Songs"
 video_dir="/storage/emulated/0/Videos"
+playlist_dir="/storage/emulated/0/Playlists"
 mkdir -p "$audio_dir"  # Create the audio directory if it doesn't exist
 mkdir -p "$video_dir"  # Create the video directory if it doesn't exist
+mkdir -p "$playlist_dir"  # Create the playlist directory if it doesn't exist
 
 # Welcome message
 echo "YouTube Downloader Bot is running."
 echo "Choose an option:"
 echo "1. Download Audio (FLAC format)"
 echo "2. Download Video (choose quality)"
-read -p "Enter your choice (1 or 2): " choice
+echo "3. Download Playlist (Audio or Video)"
+read -p "Enter your choice (1, 2, or 3): " choice
 
 # Check the user's choice
 if [[ $choice == "1" ]]; then
@@ -60,6 +63,45 @@ elif [[ $choice == "2" ]]; then
             echo "Invalid input. Please paste a valid YouTube link."
         fi
     done
+elif [[ $choice == "3" ]]; then
+    echo "You selected to download a playlist."
+    echo "Choose an option:"
+    echo "1. Download Playlist as Audio (FLAC format)"
+    echo "2. Download Playlist as Video (MP4 format)"
+    read -p "Enter your choice (1 or 2): " playlist_choice
+    echo "Paste a YouTube playlist link and press Enter to download the playlist."
+    read -p "> " playlist_link
+    # Check if the input is a valid YouTube playlist link
+    if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
+        # Extract the playlist name
+        playlist_name=$(yt-dlp --get-filename -o "%(playlist_title)s" "$playlist_link")
+        playlist_folder="$playlist_dir/$playlist_name"
+        mkdir -p "$playlist_folder"
+        echo "Playlist folder created: $playlist_folder"
+        if [[ $playlist_choice == "1" ]]; then
+            echo "Downloading playlist '$playlist_name' as audio in FLAC format..."
+            yt-dlp -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+            if [ $? -eq 0 ]; then
+                echo "Playlist download completed successfully!"
+                echo "The songs have been saved in: $playlist_folder"
+            else
+                echo "An error occurred while downloading the playlist. Please try again."
+            fi
+        elif [[ $playlist_choice == "2" ]]; then
+            echo "Downloading playlist '$playlist_name' as video in MP4 format..."
+            yt-dlp -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+            if [ $? -eq 0 ]; then
+                echo "Playlist download completed successfully!"
+                echo "The videos have been saved in: $playlist_folder"
+            else
+                echo "An error occurred while downloading the playlist. Please try again."
+            fi
+        else
+            echo "Invalid choice. Please restart the bot and enter 1 or 2."
+        fi
+    else
+        echo "Invalid input. Please paste a valid YouTube playlist link."
+    fi
 else
-    echo "Invalid choice. Please restart the bot and enter 1 or 2."
+    echo "Invalid choice. Please restart the bot and enter 1, 2, or 3."
 fi
