@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.5
+# YouTube Downloader Bot - Version 1.6
 script_version="1.5"
 
 # Define output directories (No spaces in paths)
@@ -52,7 +52,7 @@ show_banner() {
     echo -e "⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⠟⠛⠛⠛⠻⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀"
     echo -e "${RED}==========================================="
     echo -e "          YouTube BOT         "
-    echo -e "          Version 1.5         "
+    echo -e "          Version 1.6         "
     echo -e "==========================================="
 }
 
