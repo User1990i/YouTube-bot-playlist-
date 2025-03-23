@@ -27,7 +27,6 @@ sanitize_folder_name() {
     sanitized=$(echo "$sanitized" | tr -d '\n\r')
     echo "${sanitized^}"
 }
-
 # Show banner with ASCII art
 show_banner() {
     clear
@@ -52,22 +51,22 @@ show_banner() {
     echo -e "⠀⠀⠀⠀⠀⠘⣿⣷⣻⣿⢷⢶⢶⢶⢆⣗⡿⣇⣷⣿⡿⠀⠀⠀⠀⠀"
     echo -e "⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣛⣭⣭⣭⣭⣭⣻⣿⡿⠛⠀⠀⠀⠀⠀⠀"
     echo -e "⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⠟⠛⠛⠛⠻⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀"
-    echo -e "" 
     echo -e "${BOLD_RED}==========================================="
     echo -e "          YouTube BOT         "
-    echo -e "          Version 1.5            "
-    echo -e "===========================================${NC}"
+    echo -e "          Version 1.5         "
+    echo -e "==========================================="
 }
 
 # Show banner before starting
 show_banner
 
 # Display script version
+echo -e "${GREEN}YouTube Downloader Bot - Version $script_version${NC}"
 echo "Choose an option:"
-echo -e "${BLUE}1. Download Audio (FLAC format)${NC}"
-echo -e "${BLUE}2. Download Video (choose quality)${NC}"
-echo -e "${BLUE}3. Download Playlist (Audio or Video)${NC}"
-echo -e "${BLUE}4. Download YouTube Channel Content${NC}"
+echo -e "${WHITE}1. Download Audio (FLAC format)${NC}"
+echo -e "${WHITE}2. Download Video (choose quality)${NC}"
+echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
+echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
 read -p "Enter your choice (1, 2, 3, or 4): " choice
 
 if [[ $choice == "3" ]]; then
