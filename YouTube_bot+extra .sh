@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.8
-script_version="1.8"
+# YouTube Downloader Bot - Version 1.7
+script_version="1.7"
 
-# Define output directories (No spaces in paths)
+# Define output directories
 base_dir="/storage/emulated/0/Music_Vids"
 audio_dir="$base_dir/Songs"
 video_dir="$base_dir/Videos"
 playlist_dir="$base_dir/playlists"
 channel_dir="$base_dir/Channels"
-mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"  # Create necessary directories
+mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"
 
 # Function to sanitize folder names
 sanitize_folder_name() {
@@ -22,17 +22,15 @@ sanitize_folder_name() {
 # Color Scheme for YouTube Red and White
 RED='\033[0;31m'
 WHITE='\033[1;37m'
-BLUE='\033[0;34m'  # Blue color for sizes
-NC='\033[0m'  # No color
+NC='\033[0m'
 
 # Show banner with ASCII art
 show_banner() {
     clear
     echo -e "${RED}"
-    # ASCII art here
-    echo -e "${RED}==========================================="
+    echo -e "==========================================="
     echo -e "          YouTube BOT         "
-    echo -e "          Version 1.8         "
+    echo -e "          Version 1.7         "
     echo -e "==========================================="
 }
 
@@ -42,91 +40,159 @@ show_banner
 # Display script version
 echo -e "${RED}YouTube Downloader Bot - Version $script_version${NC}"
 echo "Choose an option:"
-echo -e "${WHITE}1. Download Audio (choose format)${NC}"
-echo -e "${WHITE}2. Download Video (choose quality & format)${NC}"
+echo -e "${WHITE}1. Download Audio (M4A, MP3, FLAC)${NC}"
+echo -e "${WHITE}2. Download Video (choose quality)${NC}"
 echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
 echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
 read -p "Enter your choice (1, 2, 3, or 4): " choice
 
-# Function to show format options and sizes
-show_format_options() {
-    local link="$1"
-    echo -e "${BLUE}Fetching available formats and their sizes...${NC}"
-    yt-dlp -F "$link" | awk '{print $1, $2, $3, $4}' | sed '1d'  # Show formats and their sizes
-}
-
+# Handle Audio Download (Choice 1)
 if [[ $choice == "1" ]]; then
-    echo -e "${RED}Downloading Audio.${NC}"
-    echo "Paste a YouTube link."
-    read -p "> " link
+    echo -e "${RED}Download Audio${NC}"
+    echo -e "${WHITE}Select the audio format:${NC}"
+    echo -e "${WHITE}1. M4A${NC}"
+    echo -e "${WHITE}2. MP3${NC}"
+    echo -e "${WHITE}3. FLAC${NC}"
+    read -p "Enter your choice (1, 2, or 3): " audio_format
 
-    if [[ $link == *"youtube.com"* ]]; then
-        show_format_options "$link"
-        echo -e "${WHITE}Choose your audio format based on the size you prefer.${NC}"
-        read -p "Enter your audio format ID (from the list above): " format_id
+    echo "Paste the YouTube link for audio download:"
+    read -p "> " audio_link
 
-        echo -e "${RED}Downloading audio...${NC}"
-        yt-dlp -f "$format_id" -o "$audio_dir/%(title)s.%(ext)s" "$link"
+    if [[ $audio_link == *"youtube.com"* ]]; then
+        echo "Fetching audio..."
+        
+        case $audio_format in
+            1)
+                # Download audio in M4A format
+                yt-dlp -x --audio-format m4a -o "$audio_dir/%(title)s.%(ext)s" "$audio_link"
+                ;;
+            2)
+                # Download audio in MP3 format
+                yt-dlp -x --audio-format mp3 -o "$audio_dir/%(title)s.%(ext)s" "$audio_link"
+                ;;
+            3)
+                # Download audio in FLAC format
+                yt-dlp -x --audio-format flac -o "$audio_dir/%(title)s.%(ext)s" "$audio_link"
+                ;;
+            *)
+                echo -e "${RED}Invalid choice.${NC}"
+                ;;
+        esac
     else
         echo -e "${RED}Invalid YouTube link.${NC}"
     fi
 
-elif [[ $choice == "2" ]]; then
-    echo -e "${RED}Downloading Video.${NC}"
-    echo "Paste a YouTube link."
-    read -p "> " link
-
-    if [[ $link == *"youtube.com"* ]]; then
-        show_format_options "$link"
-        echo -e "${WHITE}Choose your video format based on the size you prefer.${NC}"
-        read -p "Enter your video format ID (from the list above): " format_id
-
-        echo -e "${RED}Downloading video...${NC}"
-        yt-dlp -f "$format_id" -o "$video_dir/%(title)s.%(ext)s" "$link"
-    else
-        echo -e "${RED}Invalid YouTube link.${NC}"
-    fi
-
+# Handle Playlist Download (Choice 3)
 elif [[ $choice == "3" ]]; then
-    echo -e "${RED}Downloading Playlist.${NC}"
-    echo "Would you like to download Audio or Video?"
-    echo -e "${WHITE}1. Audio${NC}"
-    echo -e "${WHITE}2. Video${NC}"
+    echo -e "${RED}Downloading a playlist.${NC}"
+    echo "1. Download Playlist as Audio (M4A, MP3, FLAC)"
+    echo "2. Download Playlist as Video (MP4)"
     read -p "Enter your choice (1 or 2): " playlist_choice
-    echo "Paste the Playlist URL."
+    echo "Paste a YouTube playlist link:"
     read -p "> " playlist_link
 
-    if [[ $playlist_link == *"youtube.com"* ]]; then
+    if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
+        echo "Fetching playlist metadata..."
+        
+        # Extract playlist name safely
+        playlist_name=$(yt-dlp --get-title "$playlist_link" 2>/dev/null | head -n 1)
+        if [[ -z "$playlist_name" ]]; then
+            echo -e "${RED}Failed to fetch playlist metadata. Please check the link.${NC}"
+            exit 1
+        fi
+
+        playlist_name=$(sanitize_folder_name "$playlist_name")
+        playlist_folder="$playlist_dir/$playlist_name"
+        mkdir -p "$playlist_folder"
+        echo "Playlist folder created: $playlist_folder"
+
+        # Permission check before writing logs
+        if [[ ! -w "$playlist_folder" ]]; then
+            echo -e "${RED}Error: No write permission for $playlist_folder${NC}"
+            exit 1
+        fi
+
         if [[ $playlist_choice == "1" ]]; then
-            show_format_options "$playlist_link"
-            echo -e "${WHITE}Choose your audio format based on the size you prefer.${NC}"
-            read -p "Enter your audio format ID (from the list above): " format_id
-            yt-dlp -f "$format_id" -o "$playlist_dir/%(playlist)s/%(title)s.%(ext)s" "$playlist_link"
+            echo "Download Playlist as Audio (M4A, MP3, FLAC)"
+            echo -e "${WHITE}Select the audio format:${NC}"
+            echo -e "${WHITE}1. M4A${NC}"
+            echo -e "${WHITE}2. MP3${NC}"
+            echo -e "${WHITE}3. FLAC${NC}"
+            read -p "Enter your choice (1, 2, or 3): " audio_format
+            case $audio_format in
+                1)
+                    yt-dlp --yes-playlist -x --audio-format m4a -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    ;;
+                2)
+                    yt-dlp --yes-playlist -x --audio-format mp3 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    ;;
+                3)
+                    yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    ;;
+                *)
+                    echo -e "${RED}Invalid choice.${NC}"
+                    ;;
+            esac
         elif [[ $playlist_choice == "2" ]]; then
-            show_format_options "$playlist_link"
-            echo -e "${WHITE}Choose your video format based on the size you prefer.${NC}"
-            read -p "Enter your video format ID (from the list above): " format_id
-            yt-dlp -f "$format_id" -o "$playlist_dir/%(playlist)s/%(title)s.%(ext)s" "$playlist_link"
+            echo "Downloading playlist as MP4..."
+            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
         else
-            echo -e "${RED}Invalid choice.${NC}"
+            echo -e "${RED}Invalid choice. Restart the bot.${NC}"
         fi
     else
-        echo -e "${RED}Invalid Playlist URL.${NC}"
+        echo -e "${RED}Invalid playlist link.${NC}"
     fi
 
+# Handle Channel Download (Choice 4)
 elif [[ $choice == "4" ]]; then
-    echo -e "${RED}Downloading Channel Content.${NC}"
-    echo "Paste the Channel URL."
-    read -p "> " channel_link
+    echo -e "${RED}Downloading YouTube channel content.${NC}"
+    echo "Enter the YouTube Channel ID:"
+    read -p "> " channel_id
 
-    if [[ $channel_link == *"youtube.com"* ]]; then
-        show_format_options "$channel_link"
-        echo -e "${WHITE}Choose your format based on the size you prefer.${NC}"
-        read -p "Enter your format ID (from the list above): " format_id
-        yt-dlp -f "$format_id" -o "$channel_dir/%(uploader)s/%(title)s.%(ext)s" "$channel_link"
-    else
-        echo -e "${RED}Invalid Channel URL.${NC}"
+    if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
+        echo -e "${RED}Invalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.${NC}"
+        exit 1
     fi
+
+    channel_url="https://www.youtube.com/channel/$channel_id"
+    channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
+    if [[ -z "$channel_name" ]]; then
+        echo -e "${RED}Failed to fetch channel name. Please check the Channel ID.${NC}"
+        exit 1
+    fi
+    channel_name=$(sanitize_folder_name "$channel_name")
+    channel_folder="$channel_dir/$channel_name"
+    mkdir -p "$channel_folder"
+
+    echo -e "Download as:"
+    echo -e "${WHITE}1. Audio (M4A, MP3, FLAC)${NC}"
+    echo -e "${WHITE}2. Video (MP4)${NC}"
+    read -p "> " media_choice
+
+    case $media_choice in
+        1) 
+            echo -e "${RED}Downloading audio from the channel...${NC}"
+            echo -e "${WHITE}Select the audio format:${NC}"
+            echo -e "${WHITE}1. M4A${NC}"
+            echo -e "${WHITE}2. MP3${NC}"
+            echo -e "${WHITE}3. FLAC${NC}"
+            read -p "Enter your choice (1, 2, or 3): " audio_format
+            case $audio_format in
+                1) yt-dlp -f bestaudio --extract-audio --audio-format m4a -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
+                2) yt-dlp -f bestaudio --extract-audio --audio-format mp3 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
+                3) yt-dlp -f bestaudio --extract-audio --audio-format flac -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
+                *) echo -e "${RED}Invalid choice. Please select 1, 2, or 3.${NC}" ;;
+            esac
+            ;;
+        2) 
+            echo -e "${RED}Downloading video from the channel...${NC}"
+            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            ;;
+        *)
+            echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
+            ;;
+    esac
+    echo -e "${WHITE}Content downloaded to: $channel_folder${NC}"
 
 else
     echo -e "${RED}Invalid choice. Restart the bot.${NC}"
