@@ -16,10 +16,9 @@ sanitize_folder_name() {
     local input="$1"
     # Remove unwanted characters, including newlines and spaces
     local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-' | sed 's/[[:space:]]\+/_/g')
+    # Replace any newline or carriage return with an underscore
     sanitized=$(echo "$sanitized" | tr -d '\n\r')
-    sanitized=$(echo "$sanitized" | sed 's/[^a-zA-Z0-9_]//g')  # Remove unwanted special characters
-    sanitized="${sanitized^}"  # Capitalize the first letter
-    echo "${sanitized:0:50}"  # Trim to 50 characters
+    echo "${sanitized^}"  # Capitalize the first letter to fix the double naming issue and trim to 50 characters
 }
 
 # Display script version
@@ -31,37 +30,85 @@ echo -e "\e[34m3. Download Playlist (Audio or Video)\e[0m"
 echo -e "\e[34m4. Download YouTube Channel Content\e[0m"
 read -p "Enter your choice (1, 2, 3, or 4): " choice
 
-if [[ $choice == "4" ]]; then
-    echo -e "\e[33mDownloading YouTube channel content.\e[0m"
-    echo -e "\e[32mEnter the YouTube Channel ID (starting with 'UC'):\e[0m"
+if [[ $choice == "3" ]]; then
+    echo -e "\e[33mDownloading a playlist.\e[0m"
+    echo "1. Download Playlist as Audio (FLAC)"
+    echo "2. Download Playlist as Video (MP4)"
+    read -p "Enter your choice (1 or 2): " playlist_choice
+    echo "Paste a YouTube playlist link."
+    read -p "> " playlist_link
 
-    while true; do
-        read -p "> " channel_id
-
-        if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
-            echo -e "\e[31mInvalid Channel ID! It must start with 'UC'.\e[0m"
-            continue
-        fi
-
-        channel_url="https://www.youtube.com/channel/$channel_id"
-
-        # Fetch the channel name properly
-        channel_name=$(yt-dlp --print "%(uploader)s" "$channel_url" 2>/dev/null)
-
-        # Handle cases where the channel name cannot be retrieved
-        if [[ -z "$channel_name" ]]; then
-            echo -e "\e[31mFailed to fetch channel name. Enter manually:\e[0m"
-            read -p "> " channel_name
-        fi
-
-        channel_name=$(sanitize_folder_name "$channel_name")
-
-        if [[ -z "$channel_name" ]]; then
-            echo -e "\e[31mError: Channel name is empty. Please try again.\e[0m"
+    if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
+        echo "Fetching playlist metadata..."
+        
+        # Extract playlist name safely
+        playlist_name=$(yt-dlp --get-title "$playlist_link" 2>/dev/null | head -n 1)
+        if [[ -z "$playlist_name" ]]; then
+            echo -e "\e[31mFailed to fetch playlist metadata. Please check the link.\e[0m"
             exit 1
         fi
 
-        # Create the correct channel folder
+        playlist_name=$(sanitize_folder_name "$playlist_name")
+        playlist_folder="$playlist_dir/$playlist_name"
+        mkdir -p "$playlist_folder"
+        echo "Playlist folder created: $playlist_folder"
+
+        # Permission check before writing logs
+        if [[ ! -w "$playlist_folder" ]]; then
+            echo -e "\e[31mError: No write permission for $playlist_folder\e[0m"
+            exit 1
+        fi
+
+        if [[ $playlist_choice == "1" ]]; then
+            echo "Downloading playlist as FLAC..."
+            yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
+                2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
+        elif [[ $playlist_choice == "2" ]]; then
+            echo "Downloading playlist as MP4..."
+            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
+                2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
+        else
+            echo -e "\e[31mInvalid choice. Restart the bot.\e[0m"
+        fi
+    else
+        echo -e "\e[31mInvalid playlist link.\e[0m"
+    fi
+elif [[ $choice == "4" ]]; then
+    echo -e "\e[33mDownloading YouTube channel content.\e[0m"
+    # Function to download channel content
+    echo -e "\e[32mEnter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
+    
+    while true; do
+        read -p "> " channel_id
+
+        # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
+        if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
+            echo -e "\e[31mInvalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.\e[0m"
+            continue
+        fi
+
+        # Construct the channel URL using the provided Channel ID
+        channel_url="https://www.youtube.com/channel/$channel_id"
+
+        # Attempt to fetch the channel name
+        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
+        if [[ -z "$channel_name" ]]; then
+            echo -e "\e[31mFailed to fetch channel name. Please ensure the Channel ID is correct.\e[0m"
+            echo -e "Would you like to manually enter the channel name? (y/n)"
+            read -p "> " manual_input
+            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
+                echo -e "Enter the channel name manually:"
+                read -p "> " channel_name
+                channel_name=$(sanitize_folder_name "$channel_name")
+            else
+                echo -e "\e[31mOperation canceled. Returning to the main menu.\e[0m"
+                break
+            fi
+        else
+            channel_name=$(sanitize_folder_name "$channel_name")
+        fi
+
+        # Create the channel folder
         channel_folder="$channel_dir/$channel_name"
         mkdir -p "$channel_folder"
 
@@ -85,6 +132,7 @@ if [[ $choice == "4" ]]; then
             ;;
         esac
 
+        # Confirm the download location
         echo -e "\e[32mContent downloaded to: $channel_folder\e[0m"
         break
     done
