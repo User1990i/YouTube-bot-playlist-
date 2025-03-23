@@ -100,7 +100,7 @@ elif [[ $choice == "1" ]]; then
 elif [[ $choice == "3" ]]; then
     echo -e "${RED}Downloading a playlist.${NC}"
     echo "1. Download Playlist as Audio (M4A, MP3, FLAC)"
-    echo "2. Download Playlist as Video (MP4)"
+    echo "2. Download Playlist as Video (webm, mp4, MKV)"
     read -p "Enter your choice (1 or 2): " playlist_choice
     echo "Paste a YouTube playlist link:"
     read -p "> " playlist_link
@@ -148,8 +148,26 @@ elif [[ $choice == "3" ]]; then
                     ;;
             esac
         elif [[ $playlist_choice == "2" ]]; then
-            echo "Downloading playlist as MP4..."
-            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+            echo "Downloading playlist as video..."
+            echo -e "${WHITE}Select the video format:${NC}"
+            echo -e "${WHITE}1. webm${NC}"
+            echo -e "${WHITE}2. mp4${NC}"
+            echo -e "${WHITE}3. MKV${NC}"
+            read -p "Enter your choice (1, 2, or 3): " video_format
+            case $video_format in
+                1)
+                    yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format webm -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    ;;
+                2)
+                    yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    ;;
+                3)
+                    yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mkv -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    ;;
+                *)
+                    echo -e "${RED}Invalid choice.${NC}"
+                    ;;
+            esac
         else
             echo -e "${RED}Invalid choice. Restart the bot.${NC}"
         fi
@@ -180,7 +198,7 @@ elif [[ $choice == "4" ]]; then
 
     echo -e "Download as:"
     echo -e "${WHITE}1. Audio (M4A, MP3, FLAC)${NC}"
-    echo -e "${WHITE}2. Video (MP4)${NC}"
+    echo -e "${WHITE}2. Video (webm, mp4, MKV)${NC}"
     read -p "> " media_choice
 
     case $media_choice in
@@ -200,7 +218,17 @@ elif [[ $choice == "4" ]]; then
             ;;
         2) 
             echo -e "${RED}Downloading video from the channel...${NC}"
-            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            echo -e "${WHITE}Select the video format:${NC}"
+            echo -e "${WHITE}1. webm${NC}"
+            echo -e "${WHITE}2. mp4${NC}"
+            echo -e "${WHITE}3. MKV${NC}"
+            read -p "Enter your choice (1, 2, or 3): " video_format
+            case $video_format in
+                1) yt-dlp -f bestvideo+bestaudio --merge-output-format webm -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
+                2) yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
+                3) yt-dlp -f bestvideo+bestaudio --merge-output-format mkv -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
+                *) echo -e "${RED}Invalid choice. Please select 1, 2, or 3.${NC}" ;;
+            esac
             ;;
         *)
             echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
