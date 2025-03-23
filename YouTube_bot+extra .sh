@@ -18,7 +18,10 @@ sanitize_folder_name() {
     local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-' | sed 's/[[:space:]]\+/_/g')
     # Replace any newline or carriage return with an underscore
     sanitized=$(echo "$sanitized" | tr -d '\n\r')
-    echo "${sanitized^}"  # Capitalize the first letter to fix the double naming issue and trim to 50 characters
+    sanitized=$(echo "$sanitized" | sed 's/[^a-zA-Z0-9_]//g')  # Remove unwanted special characters
+    sanitized=$(echo "$sanitized" | sed 's/[a-z][A-Z]/\1\2/g')  # Ensure no double name issues
+    sanitized="${sanitized^}"  # Capitalize the first letter to avoid folder issues and ensure consistency
+    echo "${sanitized:0:50}"  # Trim to 50 characters
 }
 
 # Display script version
