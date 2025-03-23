@@ -11,6 +11,13 @@ playlist_dir="$base_dir/playlists"
 channel_dir="$base_dir/Channels"
 mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"  # Create necessary directories
 
+# Color Scheme for YouTube Red and White
+RED='\033[0;31m'
+WHITE='\033[1;37m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m'  # No color
+
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
@@ -20,13 +27,6 @@ sanitize_folder_name() {
     sanitized=$(echo "$sanitized" | tr -d '\n\r')
     echo "${sanitized^}"  # Capitalize the first letter and trim to 50 characters
 }
-
-# Color Scheme for YouTube Red and White
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'  # No color
 
 # Show banner with ASCII art
 show_banner() {
@@ -58,28 +58,54 @@ show_banner() {
     echo -e "===========================================${NC}"
 }
 
-# Go Back function
+# Navigation Options
 go_back() {
     read -p "Press Enter to go back to the main menu."
     main_menu
+}
+
+exit_bot() {
+    echo -e "${RED}Exiting the bot. Goodbye!${NC}"
+    exit 0
+}
+
+# Auto-update Feature
+auto_update() {
+    echo -e "${YELLOW}Checking for updates...${NC}"
+    curl -o ~/youtube_bot.sh "https://raw.githubusercontent.com/User1990i/YouTube-bot-playlist-/refs/heads/main/YouTube_bot%2Bextra%20.sh" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        chmod +x ~/youtube_bot.sh
+        echo -e "${GREEN}Update successful! Restarting the bot...${NC}"
+        bash ~/youtube_bot.sh
+        exit 0
+    else
+        echo -e "${RED}Failed to update. Please check your internet connection.${NC}"
+    fi
 }
 
 # Main menu
 main_menu() {
     clear
     show_banner
-    echo -e "${RED}Choose an option:${NC}"
-    echo -e "${WHITE}1. Download Audio (FLAC format)${NC}"
-    echo -e "${WHITE}2. Download Video (choose quality)${NC}"
-    echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
-    echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
-    read -p "Enter your choice (1, 2, 3, or 4): " choice
+    echo -e "${WHITE}Choose an option:${NC}"
+    echo -e "${RED}1. Download Audio (FLAC format)${NC}"
+    echo -e "${RED}2. Download Video (choose quality)${NC}"
+    echo -e "${RED}3. Download Playlist (Audio or Video)${NC}"
+    echo -e "${RED}4. Download YouTube Channel Content${NC}"
+    echo -e "${RED}5. Check for Updates${NC}"
+    echo -e "${RED}6. Exit${NC}"
+    echo -e "${YELLOW}Shortcuts:${NC}"
+    echo -e "${WHITE}- Type 'YT' to run the bot.${NC}"
+    echo -e "${WHITE}- Use the Termux widget for quick access.${NC}"
+    read -p "Enter your choice (1-6): " choice
 
     case $choice in
     1) download_audio ;;
     2) download_video ;;
     3) download_playlist ;;
     4) download_channel ;;
+    5) auto_update ;;
+    6) exit_bot ;;
     *) 
         echo -e "${RED}Invalid choice. Please try again.${NC}"
         main_menu
@@ -87,7 +113,23 @@ main_menu() {
     esac
 }
 
-# Function to validate YouTube links
+# Add Termux Widget Shortcut
+add_termux_widget() {
+    echo -e "${YELLOW}Adding Termux widget shortcut...${NC}"
+    mkdir -p ~/.shortcuts
+    ln -sf "$(pwd)/youtube_bot.sh" ~/.shortcuts/youtube_bot.sh
+    echo -e "${GREEN}Shortcut added to Termux widget!${NC}"
+}
+
+# Command Shortcut (YT)
+setup_command_shortcut() {
+    echo -e "${YELLOW}Setting up 'YT' command shortcut...${NC}"
+    echo "alias YT='bash ~/youtube_bot.sh'" >> ~/.bashrc
+    source ~/.bashrc
+    echo -e "${GREEN}Shortcut 'YT' created! Run the bot by typing 'YT'.${NC}"
+}
+
+# Validate YouTube Links
 validate_youtube_link() {
     local link="$1"
     if [[ $link == *"youtube.com"* || $link == *"youtu.be"* ]]; then
@@ -100,7 +142,7 @@ validate_youtube_link() {
 # Function to download audio
 download_audio() {
     show_banner
-    echo -e "${YELLOW}You selected to download audio in FLAC format.${NC}"
+    echo -e "${WHITE}You selected to download audio in FLAC format.${NC}"
     echo -e "Paste a YouTube link and press Enter to download the song."
     while true; do
         read -p "> " youtube_link
@@ -124,7 +166,7 @@ download_audio() {
 # Function to download video
 download_video() {
     show_banner
-    echo -e "${YELLOW}You selected to download video.${NC}"
+    echo -e "${WHITE}You selected to download video.${NC}"
     echo -e "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
     read -p "Enter your preferred quality (e.g., 720p, best): " quality
     echo -e "Paste a YouTube link and press Enter to download the video."
@@ -150,7 +192,7 @@ download_video() {
 # Function to download playlist
 download_playlist() {
     show_banner
-    echo -e "${YELLOW}Downloading a playlist.${NC}"
+    echo -e "${WHITE}Downloading a playlist.${NC}"
     echo "1. Download Playlist as Audio (FLAC)"
     echo "2. Download Playlist as Video (MP4)"
     read -p "Enter your choice (1 or 2): " playlist_choice
@@ -199,8 +241,8 @@ download_playlist() {
 # Function to download channel content
 download_channel() {
     show_banner
-    echo -e "${YELLOW}Downloading YouTube channel content.${NC}"
-    echo -e "${BLUE}Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):${NC}"
+    echo -e "${WHITE}Downloading YouTube channel content.${NC}"
+    echo -e "Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
     
     retries=3
     while [[ $retries -gt 0 ]]; do
@@ -239,31 +281,8 @@ download_channel() {
         mkdir -p "$channel_folder"
 
         echo -e "Download as:"
-        echo -e "${BLUE}1. Audio (FLAC format)${NC}"
-        echo -e "${BLUE}2. Video (MP4 format)${NC}"
+        echo -e "${RED}1. Audio (FLAC format)${NC}"
+        echo -e "${RED}2. Video (MP4 format)${NC}"
         read -p "> " media_choice
 
-        case $media_choice in
-        1) 
-            echo -e "${GREEN}Downloading audio from the channel...${NC}"
-            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
-            ;;
-        2) 
-            echo -e "${GREEN}Downloading video from the channel...${NC}"
-            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
-            ;;
-        *)
-            echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
-            continue
-            ;;
-        esac
-
-        # Confirm the download location
-        echo -e "${GREEN}Content downloaded to: $channel_folder${NC}"
-        break
-    done
-    go_back
-}
-
-# Start script
-main_menu
+        case
