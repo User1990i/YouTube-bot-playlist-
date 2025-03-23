@@ -61,7 +61,6 @@ show_banner() {
 show_banner
 
 # Display script version
-echo -e "${GREEN}YouTube Downloader Bot - Version $script_version${NC}"
 echo "Choose an option:"
 echo -e "${WHITE}1. Download Audio (FLAC format)${NC}"
 echo -e "${WHITE}2. Download Video (choose quality)${NC}"
