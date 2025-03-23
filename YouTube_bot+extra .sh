@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.8
-script_version="1.8"
+# YouTube Downloader Bot - Version 1.7
+script_version="1.7"
 
 # Define output directories
 base_dir="/storage/emulated/0/Music_Vids"
@@ -30,7 +30,7 @@ show_banner() {
     echo -e "${RED}"
     echo -e "==========================================="
     echo -e "          YouTube BOT         "
-    echo -e "          Version 1.8         "
+    echo -e "          Version 1.7         "
     echo -e "==========================================="
 }
 
@@ -41,16 +41,6 @@ update_bot() {
     echo -e "${RED}Bot updated. Restarting...${NC}"
     bash ~/youtube_bot.sh
     exit 0
-}
-
-# Function to check if the YouTube link is valid
-is_valid_youtube_link() {
-    local url=$1
-    if [[ "$url" =~ ^(https?://)?(www\.)?(youtube\.com|youtu\.be)/ ]]; then
-        return 0  # Valid link
-    else
-        return 1  # Invalid link
-    fi
 }
 
 # Show banner before starting
@@ -82,7 +72,7 @@ elif [[ $choice == "1" ]]; then
     echo "Paste the YouTube link for audio download:"
     read -p "> " audio_link
 
-    if is_valid_youtube_link "$audio_link"; then
+    if [[ $audio_link == *"youtube.com"* ]]; then
         echo "Fetching audio..."
         
         case $audio_format in
@@ -104,10 +94,6 @@ elif [[ $choice == "1" ]]; then
         esac
     else
         echo -e "${RED}Invalid YouTube link.${NC}"
-        echo -e "${WHITE}Returning to main menu...${NC}"
-        sleep 2
-        bash "$0"  # Restart the script
-        exit 0
     fi
 
 # Handle Video Download (Choice 2)
@@ -122,7 +108,7 @@ elif [[ $choice == "2" ]]; then
     echo "Paste the YouTube link for video download:"
     read -p "> " video_link
 
-    if is_valid_youtube_link "$video_link"; then
+    if [[ $video_link == *"youtube.com"* ]]; then
         echo "Fetching video..."
 
         case $video_format in
@@ -144,10 +130,6 @@ elif [[ $choice == "2" ]]; then
         esac
     else
         echo -e "${RED}Invalid YouTube link.${NC}"
-        echo -e "${WHITE}Returning to main menu...${NC}"
-        sleep 2
-        bash "$0"  # Restart the script
-        exit 0
     fi
 
 # Handle Playlist Download (Choice 3)
@@ -159,7 +141,7 @@ elif [[ $choice == "3" ]]; then
     echo "Paste a YouTube playlist link:"
     read -p "> " playlist_link
 
-    if is_valid_youtube_link "$playlist_link"; then
+    if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
         echo "Fetching playlist metadata..."
         
         # Extract playlist name safely
@@ -227,10 +209,6 @@ elif [[ $choice == "3" ]]; then
         fi
     else
         echo -e "${RED}Invalid playlist link.${NC}"
-        echo -e "${WHITE}Returning to main menu...${NC}"
-        sleep 2
-        bash "$0"  # Restart the script
-        exit 0
     fi
 
 # Handle Channel Download (Choice 4)
@@ -270,37 +248,20 @@ elif [[ $choice == "4" ]]; then
             case $audio_format in
                 1) yt-dlp -f bestaudio --extract-audio --audio-format m4a -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
                 2) yt-dlp -f bestaudio --extract-audio --audio-format mp3 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
-                                3) yt-dlp -f bestaudio --extract-audio --audio-format flac -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
-                *)
-                    echo -e "${RED}Invalid audio format choice.${NC}"
-                    ;;
+                3) yt-dlp -f bestaudio --extract-audio --audio-format flac -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
+                *) echo -e "${RED}Invalid choice. Please select 1, 2, or 3.${NC}" ;;
             esac
             ;;
         2) 
             echo -e "${RED}Downloading video from the channel...${NC}"
-            echo -e "${WHITE}Select the video format:${NC}"
-            echo -e "${WHITE}1. MP4${NC}"
-            echo -e "${WHITE}2. WEBM${NC}"
-            echo -e "${WHITE}3. MKV${NC}"
-            read -p "Enter your choice (1, 2, or 3): " video_format
-            case $video_format in
-                1) yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
-                2) yt-dlp -f bestvideo+bestaudio --merge-output-format webm -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
-                3) yt-dlp -f bestvideo+bestaudio --merge-output-format mkv -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
-                *)
-                    echo -e "${RED}Invalid video format choice.${NC}"
-                    ;;
-            esac
+            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         *)
-            echo -e "${RED}Invalid choice for channel media type.${NC}"
+            echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
             ;;
     esac
+    echo -e "${WHITE}Content downloaded to: $channel_folder${NC}"
 
-# If an invalid choice is made, return to the main menu
 else
-    echo -e "${RED}Invalid choice. Returning to main menu...${NC}"
-    sleep 2
-    bash "$0"  # Restart the script
-    exit 0
+    echo -e "${RED}Invalid choice. Restart the bot.${NC}"
 fi
