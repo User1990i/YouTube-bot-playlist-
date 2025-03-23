@@ -36,7 +36,7 @@ show_banner() {
     echo -e "⠀⠸⣿⣿⣷⣦⣀⡴⢶⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⣴⣾⣿⣿⠇⠀"
     echo -e "⠀⠀⢻⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣇⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀"
     echo -e "⠀⠀⣠⣻⡿⠿⢿⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣻⣥⠀⠀"
-    echo -e "⠀⠀⣿⣿⣿⣿⣿⣿⣿⡿⣟⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀"
+    echo -e "⠀⠀⣿⣿⣿⣿⣿⣿⣿⡿⣟⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀"
     echo -e "⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⡹⡜⠋⡾⣼⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀"
     echo -e "⠀⠀⣿⣻⣾⣭⣝⣛⣛⣛⣛⣃⣿⣾⣇⣛⣛⣛⣛⣯⣭⣷⣿⣿⡇⠀"
     echo -e "⠀⠰⢿⣿⣎⠙⠛⢻⣿⡿⠿⠟⣿⣿⡟⠿⠿⣿⡛⠛⠋⢹⣿⡿⢳⠀"
@@ -68,11 +68,34 @@ echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
 echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
 read -p "Enter your choice (1, 2, 3, or 4): " choice
 
-if [[ $choice == "3" ]]; then
+# Ensure that the user's input is valid
+if [[ ! "$choice" =~ ^[1-4]$ ]]; then
+    echo -e "${RED}Invalid choice. Please select a number between 1 and 4.${NC}"
+    exit 1
+fi
+
+# Option 1 - Download Audio (FLAC format)
+if [[ "$choice" == "1" ]]; then
+    echo -e "${RED}Downloading Audio in FLAC format.${NC}"
+    # Add the code to handle audio download here...
+
+# Option 2 - Download Video (choose quality)
+elif [[ "$choice" == "2" ]]; then
+    echo -e "${RED}Downloading Video (choose quality).${NC}"
+    # Add the code to handle video download here...
+
+# Option 3 - Download Playlist (Audio or Video)
+elif [[ "$choice" == "3" ]]; then
     echo -e "${RED}Downloading a playlist.${NC}"
     echo "1. Download Playlist as Audio (FLAC)"
     echo "2. Download Playlist as Video (MP4)"
     read -p "Enter your choice (1 or 2): " playlist_choice
+
+    if [[ ! "$playlist_choice" =~ ^[1-2]$ ]]; then
+        echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
+        exit 1
+    fi
+
     echo "Paste a YouTube playlist link."
     read -p "> " playlist_link
 
@@ -111,9 +134,10 @@ if [[ $choice == "3" ]]; then
     else
         echo -e "${RED}Invalid playlist link.${NC}"
     fi
-elif [[ $choice == "4" ]]; then
+
+# Option 4 - Download YouTube Channel Content
+elif [[ "$choice" == "4" ]]; then
     echo -e "${RED}Downloading YouTube channel content.${NC}"
-    # Function to download channel content
     echo -e "${WHITE}Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
     
     while true; do
@@ -134,47 +158,17 @@ elif [[ $choice == "4" ]]; then
             echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
             echo -e "Would you like to manually enter the channel name? (y/n)"
             read -p "> " manual_input
-            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
-                echo -e "Enter the channel name manually:"
-                read -p "> " channel_name
-                channel_name=$(sanitize_folder_name "$channel_name")
-            else
-                echo -e "${RED}Operation canceled. Returning to the main menu.${NC}"
-                break
+            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]
+                then
+                read -p "Enter channel name: " channel_name
             fi
-        else
-            channel_name=$(sanitize_folder_name "$channel_name")
         fi
 
-        # Create the channel folder
+        # Clean up channel name
+        channel_name=$(sanitize_folder_name "$channel_name")
         channel_folder="$channel_dir/$channel_name"
         mkdir -p "$channel_folder"
-
-        echo -e "Download as:"
-        echo -e "${WHITE}1. Audio (FLAC format)${NC}"
-        echo -e "${WHITE}2. Video (MP4 format)${NC}"
-        read -p "> " media_choice
-
-        case $media_choice in
-        1) 
-            echo -e "${RED}Downloading audio from the channel...${NC}"
-            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
-            ;;
-        2) 
-            echo -e "${RED}Downloading video from the channel...${NC}"
-            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
-            ;;
-        *)
-            echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
-            continue
-            ;;
-        esac
-
-        # Confirm the download location
-        echo -e "${WHITE}Content downloaded to: $channel_folder${NC}"
+        echo "Downloading channel content to: $channel_folder"
         break
     done
-    echo -e "${WHITE}Download completed!${NC}"
-else
-    echo -e "${RED}Invalid choice. Restart the bot.${NC}"
 fi
