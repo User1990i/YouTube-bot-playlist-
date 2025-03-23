@@ -34,6 +34,15 @@ show_banner() {
     echo -e "==========================================="
 }
 
+# Function to update the bot automatically
+update_bot() {
+    echo -e "${RED}Checking for updates...${NC}"
+    curl -o ~/youtube_bot.sh "https://raw.githubusercontent.com/User1990i/YouTube-bot-playlist-/refs/heads/main/YouTube_bot%2Bextra%20.sh" && chmod +x ~/youtube_bot.sh
+    echo -e "${RED}Bot updated. Restarting...${NC}"
+    bash ~/youtube_bot.sh
+    exit 0
+}
+
 # Show banner before starting
 show_banner
 
@@ -44,10 +53,15 @@ echo -e "${WHITE}1. Download Audio (M4A, MP3, FLAC)${NC}"
 echo -e "${WHITE}2. Download Video (choose quality)${NC}"
 echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
 echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
-read -p "Enter your choice (1, 2, 3, or 4): " choice
+echo -e "${WHITE}5. Check for Updates${NC}"
+read -p "Enter your choice (1, 2, 3, 4, or 5): " choice
+
+# Auto-update option (Choice 5)
+if [[ $choice == "5" ]]; then
+    update_bot
 
 # Handle Audio Download (Choice 1)
-if [[ $choice == "1" ]]; then
+elif [[ $choice == "1" ]]; then
     echo -e "${RED}Download Audio${NC}"
     echo -e "${WHITE}Select the audio format:${NC}"
     echo -e "${WHITE}1. M4A${NC}"
