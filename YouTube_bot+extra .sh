@@ -1,4 +1,3 @@
-bash
 #!/bin/bash
 
 # YouTube Downloader Bot - Version 1.8
