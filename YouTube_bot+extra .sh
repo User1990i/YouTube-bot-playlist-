@@ -43,6 +43,16 @@ update_bot() {
     exit 0
 }
 
+# Function to check if the YouTube link is valid
+is_valid_youtube_link() {
+    local url=$1
+    if [[ "$url" =~ ^(https?://)?(www\.)?(youtube\.com|youtu\.be)/ ]]; then
+        return 0  # Valid link
+    else
+        return 1  # Invalid link
+    fi
+}
+
 # Show banner before starting
 show_banner
 
@@ -72,7 +82,7 @@ elif [[ $choice == "1" ]]; then
     echo "Paste the YouTube link for audio download:"
     read -p "> " audio_link
 
-    if [[ $audio_link == *"youtube.com"* ]]; then
+    if is_valid_youtube_link "$audio_link"; then
         echo "Fetching audio..."
         
         case $audio_format in
@@ -94,6 +104,10 @@ elif [[ $choice == "1" ]]; then
         esac
     else
         echo -e "${RED}Invalid YouTube link.${NC}"
+        echo -e "${WHITE}Returning to main menu...${NC}"
+        sleep 2
+        bash "$0"  # Restart the script
+        exit 0
     fi
 
 # Handle Video Download (Choice 2)
@@ -108,21 +122,21 @@ elif [[ $choice == "2" ]]; then
     echo "Paste the YouTube link for video download:"
     read -p "> " video_link
 
-    if [[ $video_link == *"youtube.com"* ]]; then
+    if is_valid_youtube_link "$video_link"; then
         echo "Fetching video..."
-        
+
         case $video_format in
             1)
                 # Download video in MP4 format
-                yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$video_link"
+                yt-dlp -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$video_link"
                 ;;
             2)
                 # Download video in WEBM format
-                yt-dlp -f bestvideo+bestaudio --merge-output-format webm -o "$video_dir/%(title)s.%(ext)s" "$video_link"
+                yt-dlp -f "bestvideo+bestaudio/best" --merge-output-format webm -o "$video_dir/%(title)s.%(ext)s" "$video_link"
                 ;;
             3)
                 # Download video in MKV format
-                yt-dlp -f bestvideo+bestaudio --merge-output-format mkv -o "$video_dir/%(title)s.%(ext)s" "$video_link"
+                yt-dlp -f "bestvideo+bestaudio/best" --merge-output-format mkv -o "$video_dir/%(title)s.%(ext)s" "$video_link"
                 ;;
             *)
                 echo -e "${RED}Invalid choice.${NC}"
@@ -130,6 +144,10 @@ elif [[ $choice == "2" ]]; then
         esac
     else
         echo -e "${RED}Invalid YouTube link.${NC}"
+        echo -e "${WHITE}Returning to main menu...${NC}"
+        sleep 2
+        bash "$0"  # Restart the script
+        exit 0
     fi
 
 # Handle Playlist Download (Choice 3)
@@ -141,7 +159,7 @@ elif [[ $choice == "3" ]]; then
     echo "Paste a YouTube playlist link:"
     read -p "> " playlist_link
 
-    if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
+    if is_valid_youtube_link "$playlist_link"; then
         echo "Fetching playlist metadata..."
         
         # Extract playlist name safely
@@ -155,6 +173,12 @@ elif [[ $choice == "3" ]]; then
         playlist_folder="$playlist_dir/$playlist_name"
         mkdir -p "$playlist_folder"
         echo "Playlist folder created: $playlist_folder"
+
+        # Permission check before writing logs
+        if [[ ! -w "$playlist_folder" ]]; then
+            echo -e "${RED}Error: No write permission for $playlist_folder${NC}"
+            exit 1
+        fi
 
         if [[ $playlist_choice == "1" ]]; then
             echo "Download Playlist as Audio (M4A, MP3, FLAC)"
@@ -178,7 +202,7 @@ elif [[ $choice == "3" ]]; then
                     ;;
             esac
         elif [[ $playlist_choice == "2" ]]; then
-            echo "Downloading playlist as video..."
+            echo "Downloading playlist as Video (MP4, WEBM, MKV)"
             echo -e "${WHITE}Select the video format:${NC}"
             echo -e "${WHITE}1. MP4${NC}"
             echo -e "${WHITE}2. WEBM${NC}"
@@ -186,23 +210,27 @@ elif [[ $choice == "3" ]]; then
             read -p "Enter your choice (1, 2, or 3): " video_format
             case $video_format in
                 1)
-                    yt-dlp --yes-playlist -f bestvideo+bestaudio --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
                     ;;
                 2)
-                    yt-dlp --yes-playlist -f bestvideo+bestaudio --merge-output-format webm -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format webm -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
                     ;;
                 3)
-                    yt-dlp --yes-playlist -f bestvideo+bestaudio --merge-output-format mkv -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+                    yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mkv -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
                     ;;
                 *)
                     echo -e "${RED}Invalid choice.${NC}"
                     ;;
             esac
         else
-            echo -e "${RED}Invalid choice.${NC}"
+            echo -e "${RED}Invalid choice. Restart the bot.${NC}"
         fi
     else
         echo -e "${RED}Invalid playlist link.${NC}"
+        echo -e "${WHITE}Returning to main menu...${NC}"
+        sleep 2
+        bash "$0"  # Restart the script
+        exit 0
     fi
 
 # Handle Channel Download (Choice 4)
@@ -242,8 +270,10 @@ elif [[ $choice == "4" ]]; then
             case $audio_format in
                 1) yt-dlp -f bestaudio --extract-audio --audio-format m4a -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
                 2) yt-dlp -f bestaudio --extract-audio --audio-format mp3 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
-                3) yt-dlp -f bestaudio --extract-audio --audio-format flac -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
-                *) echo -e "${RED}Invalid audio format choice.${NC}" ;;
+                                3) yt-dlp -f bestaudio --extract-audio --audio-format flac -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
+                *)
+                    echo -e "${RED}Invalid audio format choice.${NC}"
+                    ;;
             esac
             ;;
         2) 
@@ -257,13 +287,20 @@ elif [[ $choice == "4" ]]; then
                 1) yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
                 2) yt-dlp -f bestvideo+bestaudio --merge-output-format webm -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
                 3) yt-dlp -f bestvideo+bestaudio --merge-output-format mkv -o "$channel_folder/%(title)s.%(ext)s" "$channel_url" ;;
-                *) echo -e "${RED}Invalid video format choice.${NC}" ;;
+                *)
+                    echo -e "${RED}Invalid video format choice.${NC}"
+                    ;;
             esac
             ;;
         *)
-            echo -e "${RED}Invalid choice.${NC}"
+            echo -e "${RED}Invalid choice for channel media type.${NC}"
             ;;
     esac
+
+# If an invalid choice is made, return to the main menu
 else
-    echo -e "${RED}Invalid option.${NC}"
+    echo -e "${RED}Invalid choice. Returning to main menu...${NC}"
+    sleep 2
+    bash "$0"  # Restart the script
+    exit 0
 fi
