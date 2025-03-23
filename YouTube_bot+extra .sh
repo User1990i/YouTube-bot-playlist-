@@ -68,11 +68,11 @@ go_back() {
 main_menu() {
     clear
     show_banner
-    echo -e "${YELLOW}Choose an option:${NC}"
-    echo -e "${BLUE}1. Download Audio (FLAC format)${NC}"
-    echo -e "${BLUE}2. Download Video (choose quality)${NC}"
-    echo -e "${BLUE}3. Download Playlist (Audio or Video)${NC}"
-    echo -e "${BLUE}4. Download YouTube Channel Content${NC}"
+    echo -e "${RED}Choose an option:${NC}"
+    echo -e "${WHITE}1. Download Audio (FLAC format)${NC}"
+    echo -e "${WHITE}2. Download Video (choose quality)${NC}"
+    echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
+    echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
     read -p "Enter your choice (1, 2, 3, or 4): " choice
 
     case $choice in
