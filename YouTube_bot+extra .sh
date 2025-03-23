@@ -21,8 +21,8 @@ sanitize_folder_name() {
     echo "${sanitized^}"  # Capitalize the first letter to fix the double naming issue and trim to 50 characters
 }
 
-# Display script version in red
-echo -e "\e[31mYouTube Downloader Bot - Version $script_version\e[0m"
+# Display script version
+echo -e "\e[32mYouTube Downloader Bot - Version $script_version\e[0m"
 echo "Choose an option:"
 echo -e "\e[34m1. Download Audio (FLAC format)\e[0m"
 echo -e "\e[34m2. Download Video (choose quality)\e[0m"
