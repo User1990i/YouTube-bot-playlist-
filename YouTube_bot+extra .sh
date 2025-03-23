@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.6
-script_version="1.6"
+# YouTube Downloader Bot - Version 1.5
+script_version="1.5"
 
 # Define output directories (No spaces in paths)
 base_dir="/storage/emulated/0/Music_Vids"
@@ -21,81 +21,20 @@ sanitize_folder_name() {
     echo "${sanitized^}"  # Capitalize the first letter to fix the double naming issue and trim to 50 characters
 }
 
-# Color Scheme for YouTube Red and White
-RED='\033[0;31m'
-WHITE='\033[1;37m'
-NC='\033[0m'  # No color
-
-# Show banner with ASCII art
-show_banner() {
-    clear
-    echo -e "${RED}"
-    echo -e "⠐⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠂"
-    echo -e "⠀⢹⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡇⠀"
-    echo -e "⠀⢸⣿⣄⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⣠⣿⡇⠀"
-    echo -e "⠀⠸⣿⣿⣷⣦⣀⡴⢶⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⣴⣾⣿⣿⠇⠀"
-    echo -e "⠀⠀⢻⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣇⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀"
-    echo -e "⠀⠀⣠⣻⡿⠿⢿⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣻⣥⠀⠀"
-    echo -e "⠀⠀⣿⣿⣿⣿⣿⣿⣿⡿⣟⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀"
-    echo -e "⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⡹⡜⠋⡾⣼⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀"
-    echo -e "⠀⠀⣿⣻⣾⣭⣝⣛⣛⣛⣛⣃⣿⣾⣇⣛⣛⣛⣛⣯⣭⣷⣿⣿⡇⠀"
-    echo -e "⠀⠰⢿⣿⣎⠙⠛⢻⣿⡿⠿⠟⣿⣿⡟⠿⠿⣿⡛⠛⠋⢹⣿⡿⢳⠀"
-    echo -e "⠀⠘⣦⡙⢿⣦⣀⠀⠀⠀⢀⣼⣿⣿⣳⣄⠀⠀⠀⢀⣠⡿⢛⣡⡏⠀"
-    echo -e "⠀⠀⠹⣟⢿⣾⣿⣿⣿⣿⣿⣧⣿⣿⣧⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠀⠀"
-    echo -e "⠀⠀⢰⣿⣣⣿⣭⢿⣿⣱⣶⣿⣿⣿⣿⣿⣿⣷⣶⢹⣿⣭⣻⣶⣿⣿⠀⠀"
-    echo -e "⠀⠀⠈⣿⢿⣿⣿⠏⣿⣾⣛⠿⣿⣿⣿⠟⣻⣾⡏⢿⣿⣯⡿⡏⠀⠀"
-    echo -e "⠀⠀⠤⠾⣟⣿⡁⠘⢨⣟⢻⡿⠾⠿⠾⢿⡛⣯⠘⠀⣸⣽⡛⠲⠄⠀"
-    echo -e "⠀⠀⠀⠀⠘⣿⣧⠀⠸⠃⠈⠙⠛⠛⠉⠈⠁⠹⠀⠀⣿⡟⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⢻⣿⣶⣀⣠⠀⠀⠀⠀⠀⠀⢠⡄⡄⣦⣿⠃⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠘⣿⣷⣻⣿⢷⢶⢶⢶⢆⣗⡿⣇⣷⣿⡿⠀⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣛⣭⣭⣭⣭⣭⣻⣿⡿⠛⠀⠀⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⠟⠛⠛⠛⠻⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀"
-    echo -e "${RED}==========================================="
-    echo -e "          YouTube BOT         "
-    echo -e "          Version 1.6         "
-    echo -e "==========================================="
-}
-
-# Show banner before starting
-show_banner
-
 # Display script version
-echo -e "${RED}YouTube Downloader Bot - Version $script_version${NC}"
+echo -e "\e[32mYouTube Downloader Bot - Version $script_version\e[0m"
 echo "Choose an option:"
-echo -e "${WHITE}1. Download Audio (FLAC format)${NC}"
-echo -e "${WHITE}2. Download Video (choose quality)${NC}"
-echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
-echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
+echo -e "\e[34m1. Download Video (choose quality)\e[0m"
+echo -e "\e[34m2. Download Audio (FLAC format)\e[0m"
+echo -e "\e[34m3. Download Playlist (Audio or Video)\e[0m"
+echo -e "\e[34m4. Download YouTube Channel Content\e[0m"
 read -p "Enter your choice (1, 2, 3, or 4): " choice
 
-# Ensure that the user's input is valid
-if [[ ! "$choice" =~ ^[1-4]$ ]]; then
-    echo -e "${RED}Invalid choice. Please select a number between 1 and 4.${NC}"
-    exit 1
-fi
-
-# Option 1 - Download Audio (FLAC format)
-if [[ "$choice" == "1" ]]; then
-    echo -e "${RED}Downloading Audio in FLAC format.${NC}"
-    # Add the code to handle audio download here...
-
-# Option 2 - Download Video (choose quality)
-elif [[ "$choice" == "2" ]]; then
-    echo -e "${RED}Downloading Video (choose quality).${NC}"
-    # Add the code to handle video download here...
-
-# Option 3 - Download Playlist (Audio or Video)
-elif [[ "$choice" == "3" ]]; then
-    echo -e "${RED}Downloading a playlist.${NC}"
+if [[ $choice == "3" ]]; then
+    echo -e "\e[33mDownloading a playlist.\e[0m"
     echo "1. Download Playlist as Audio (FLAC)"
     echo "2. Download Playlist as Video (MP4)"
     read -p "Enter your choice (1 or 2): " playlist_choice
-
-    if [[ ! "$playlist_choice" =~ ^[1-2]$ ]]; then
-        echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
-        exit 1
-    fi
-
     echo "Paste a YouTube playlist link."
     read -p "> " playlist_link
 
@@ -105,7 +44,7 @@ elif [[ "$choice" == "3" ]]; then
         # Extract playlist name safely
         playlist_name=$(yt-dlp --get-title "$playlist_link" 2>/dev/null | head -n 1)
         if [[ -z "$playlist_name" ]]; then
-            echo -e "${RED}Failed to fetch playlist metadata. Please check the link.${NC}"
+            echo -e "\e[31mFailed to fetch playlist metadata. Please check the link.\e[0m"
             exit 1
         fi
 
@@ -116,7 +55,7 @@ elif [[ "$choice" == "3" ]]; then
 
         # Permission check before writing logs
         if [[ ! -w "$playlist_folder" ]]; then
-            echo -e "${RED}Error: No write permission for $playlist_folder${NC}"
+            echo -e "\e[31mError: No write permission for $playlist_folder\e[0m"
             exit 1
         fi
 
@@ -129,23 +68,22 @@ elif [[ "$choice" == "3" ]]; then
             yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
                 2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
         else
-            echo -e "${RED}Invalid choice. Restart the bot.${NC}"
+            echo -e "\e[31mInvalid choice. Restart the bot.\e[0m"
         fi
     else
-        echo -e "${RED}Invalid playlist link.${NC}"
+        echo -e "\e[31mInvalid playlist link.\e[0m"
     fi
-
-# Option 4 - Download YouTube Channel Content
-elif [[ "$choice" == "4" ]]; then
-    echo -e "${RED}Downloading YouTube channel content.${NC}"
-    echo -e "${WHITE}Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
+elif [[ $choice == "4" ]]; then
+    echo -e "\e[33mDownloading YouTube channel content.\e[0m"
+    # Function to download channel content
+    echo -e "\e[32mEnter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
     
     while true; do
         read -p "> " channel_id
 
         # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
         if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
-            echo -e "${RED}Invalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.${NC}"
+            echo -e "\e[31mInvalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.\e[0m"
             continue
         fi
 
@@ -155,20 +93,50 @@ elif [[ "$choice" == "4" ]]; then
         # Attempt to fetch the channel name
         channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
         if [[ -z "$channel_name" ]]; then
-            echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
+            echo -e "\e[31mFailed to fetch channel name. Please ensure the Channel ID is correct.\e[0m"
             echo -e "Would you like to manually enter the channel name? (y/n)"
             read -p "> " manual_input
-            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]
-                then
-                read -p "Enter channel name: " channel_name
+            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
+                echo -e "Enter the channel name manually:"
+                read -p "> " channel_name
+                channel_name=$(sanitize_folder_name "$channel_name")
+            else
+                echo -e "\e[31mOperation canceled. Returning to the main menu.\e[0m"
+                break
             fi
+        else
+            channel_name=$(sanitize_folder_name "$channel_name")
         fi
 
-        # Clean up channel name
-        channel_name=$(sanitize_folder_name "$channel_name")
+        # Create the channel folder
         channel_folder="$channel_dir/$channel_name"
         mkdir -p "$channel_folder"
-        echo "Downloading channel content to: $channel_folder"
+
+        echo -e "Download as:"
+        echo -e "1. Video (MP4 format)"
+        echo -e "2. Audio (FLAC format)"
+        read -p "> " media_choice
+
+        case $media_choice in
+        1) 
+            echo -e "Downloading video from the channel..."
+            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            ;;
+        2) 
+            echo -e "Downloading audio from the channel..."
+            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            ;;
+        *)
+            echo -e "\e[31mInvalid choice. Please select 1 or 2.\e[0m"
+            continue
+            ;;
+        esac
+
+        # Confirm the download location
+        echo -e "\e[32mContent downloaded to: $channel_folder\e[0m"
         break
     done
+    echo -e "\e[32mDownload completed!\e[0m"
+else
+    echo -e "\e[31mInvalid choice. Restart the bot.\e[0m"
 fi
