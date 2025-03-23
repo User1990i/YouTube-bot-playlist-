@@ -2,6 +2,34 @@
 
 # YouTube Downloader Bot - Version 1.5
 script_version="1.5"
+repo_url="https://raw.githubusercontent.com/User1990i/YouTube-bot-playlist-/refs/heads/main/YouTube_bot%2Bextra%20.sh"  # Replace with your raw script URL
+local_script="youtube_bot.sh"
+
+# Function to check for updates
+check_for_update() {
+    echo "Checking for updates..."
+    # Get the latest version of the script from the repository
+    latest_version=$(curl -s $repo_url | grep -oP 'script_version="\K[0-9\.]+')
+
+    if [[ -z "$latest_version" ]]; then
+        echo -e "\e[31mFailed to fetch the latest version. Please check your internet connection or the script URL.\e[0m"
+        return
+    fi
+
+    # Compare versions
+    if [[ "$latest_version" != "$script_version" ]]; then
+        echo -e "\e[33mNew version ($latest_version) available. Updating...\e[0m"
+        curl -s -o "$local_script" "$repo_url"
+        chmod +x "$local_script"
+        echo -e "\e[32mUpdate successful! The script has been updated to version $latest_version.\e[0m"
+        exit 0  # Exit after update to run the new version
+    else
+        echo -e "\e[32mYou are already using the latest version ($script_version).\e[0m"
+    fi
+}
+
+# Call the check_for_update function to auto-check for updates at the beginning
+check_for_update
 
 # Define output directories (No spaces in paths)
 base_dir="/storage/emulated/0/Music_Vids"
