@@ -11,94 +11,104 @@ playlist_dir="$base_dir/playlists"
 channel_dir="$base_dir/Channels"
 mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"  # Create necessary directories
 
-# Color Scheme
-RED='\033[0;31m'
-WHITE='\033[1;37m'
-BOLD_RED='\033[1;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'  # No color
-
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
-    local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-/' | sed 's/[[:space:]]\+/_/g')
+    # Remove unwanted characters, including newlines and spaces
+    local sanitized=$(echo "$input" | tr -cd '[:alnum:][:space:]._-' | sed 's/[[:space:]]\+/_/g')
+    # Replace any newline or carriage return with an underscore
     sanitized=$(echo "$sanitized" | tr -d '\n\r')
-    echo "${sanitized^}"
-}
-# Show banner with ASCII art
-show_banner() {
-    clear
-    echo -e "${BOLD_RED}"
-    echo -e "⠐⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠂"
-    echo -e "⠀⢹⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡇⠀"
-    echo -e "⠀⢸⣿⣄⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⣠⣿⡇⠀"
-    echo -e "⠀⠸⣿⣿⣷⣦⣀⡴⢶⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⣴⣾⣿⣿⠇⠀"
-    echo -e "⠀⠀⢻⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣇⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀"
-    echo -e "⠀⠀⣠⣻⡿⠿⢿⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣻⣥⠀⠀"
-    echo -e "⠀⠀⣿⣿⣿⣿⣿⣿⣿⡿⣟⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀"
-    echo -e "⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⡹⡜⠋⡾⣼⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀"
-    echo -e "⠀⠀⣿⣻⣾⣭⣝⣛⣛⣛⣛⣃⣿⣾⣇⣛⣛⣛⣛⣯⣭⣷⣿⣿⡇⠀"
-    echo -e "⠀⠰⢿⣿⣎⠙⠛⢻⣿⡿⠿⠟⣿⣿⡟⠿⠿⣿⡛⠛⠋⢹⣿⡿⢳⠀"
-    echo -e "⠀⠘⣦⡙⢿⣦⣀⠀⠀⠀⢀⣼⣿⣿⣳⣄⠀⠀⠀⢀⣠⡿⢛⣡⡏⠀"
-    echo -e "⠀⠀⠹⣟⢿⣾⣿⣿⣿⣿⣿⣧⣿⣿⣧⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠀⠀"
-    echo -e "⠀⠀⢰⣿⣣⣿⣭⢿⣿⣱⣶⣿⣿⣿⣿⣿⣿⣷⣶⢹⣿⣭⣻⣶⣿⣿⠀⠀"
-    echo -e "⠀⠀⠈⣿⢿⣿⣿⠏⣿⣾⣛⠿⣿⣿⣿⠟⣻⣾⡏⢿⣿⣯⡿⡏⠀⠀"
-    echo -e "⠀⠀⠤⠾⣟⣿⡁⠘⢨⣟⢻⡿⠾⠿⠾⢿⡛⣯⠘⠀⣸⣽⡛⠲⠄⠀"
-    echo -e "⠀⠀⠀⠀⠀⠘⣿⣧⠀⠸⠃⠈⠙⠛⠛⠉⠈⠁⠹⠀⠀⣿⡟⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⢻⣿⣶⣀⣠⠀⠀⠀⠀⠀⠀⢠⡄⡄⣦⣿⠃⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠘⣿⣷⣻⣿⢷⢶⢶⢶⢆⣗⡿⣇⣷⣿⡿⠀⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣛⣭⣭⣭⣭⣭⣻⣿⡿⠛⠀⠀⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⠟⠛⠛⠛⠻⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀"
-    echo -e "${BOLD_RED}==========================================="
-    echo -e "          YouTube BOT         "
-    echo -e "          Version 1.5         "
-    echo -e "==========================================="
+    echo "${sanitized^}"  # Capitalize the first letter to fix the double naming issue and trim to 50 characters
 }
 
-# Show banner before starting
-show_banner
-
-# Display script version
-echo -e "${GREEN}YouTube Downloader Bot - Version $script_version${NC}"
+# Display script version in red
+echo -e "\e[31mYouTube Downloader Bot - Version $script_version\e[0m"
 echo "Choose an option:"
-echo -e "${WHITE}1. Download Audio (FLAC format)${NC}"
-echo -e "${WHITE}2. Download Video (choose quality)${NC}"
-echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
-read -p "Enter your choice (1, 2, or 3): " choice
+echo -e "\e[34m1. Download Audio (FLAC format)\e[0m"
+echo -e "\e[34m2. Download Video (choose quality)\e[0m"
+echo -e "\e[34m3. Download Playlist (Audio or Video)\e[0m"
+echo -e "\e[34m4. Download YouTube Channel Content\e[0m"
+read -p "Enter your choice (1, 2, 3, or 4): " choice
 
 if [[ $choice == "3" ]]; then
-    echo -e "${YELLOW}Downloading a playlist.${NC}"
+    echo -e "\e[33mDownloading a playlist.\e[0m"
     echo "1. Download Playlist as Audio (FLAC)"
     echo "2. Download Playlist as Video (MP4)"
     read -p "Enter your choice (1 or 2): " playlist_choice
     echo "Paste a YouTube playlist link."
     read -p "> " playlist_link
 
-    playlist_name=$(yt-dlp --get-title "$playlist_link" 2>/dev/null | head -n 1)
-    playlist_name=$(sanitize_folder_name "$playlist_name")
-    playlist_folder="$playlist_dir/$playlist_name"
-    mkdir -p "$playlist_folder"
+    if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
+        echo "Fetching playlist metadata..."
+        
+        # Extract playlist name safely
+        playlist_name=$(yt-dlp --get-title "$playlist_link" 2>/dev/null | head -n 1)
+        if [[ -z "$playlist_name" ]]; then
+            echo -e "\e[31mFailed to fetch playlist metadata. Please check the link.\e[0m"
+            exit 1
+        fi
 
-    if [[ $playlist_choice == "1" ]]; then
-        echo "Downloading playlist as FLAC..."
-        yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
-    elif [[ $playlist_choice == "2" ]]; then
-        echo "Downloading playlist as MP4..."
-        yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link"
+        playlist_name=$(sanitize_folder_name "$playlist_name")
+        playlist_folder="$playlist_dir/$playlist_name"
+        mkdir -p "$playlist_folder"
+        echo "Playlist folder created: $playlist_folder"
+
+        # Permission check before writing logs
+        if [[ ! -w "$playlist_folder" ]]; then
+            echo -e "\e[31mError: No write permission for $playlist_folder\e[0m"
+            exit 1
+        fi
+
+        if [[ $playlist_choice == "1" ]]; then
+            echo "Downloading playlist as FLAC..."
+            yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
+                2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
+        elif [[ $playlist_choice == "2" ]]; then
+            echo "Downloading playlist as MP4..."
+            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
+                2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
+        else
+            echo -e "\e[31mInvalid choice. Restart the bot.\e[0m"
+        fi
+    else
+        echo -e "\e[31mInvalid playlist link.\e[0m"
     fi
-
 elif [[ $choice == "4" ]]; then
-    echo -e "${YELLOW}Downloading YouTube channel content.${NC}"
-    echo -e "${GREEN}Enter the YouTube Channel ID:${NC}"
+    echo -e "\e[33mDownloading YouTube channel content.\e[0m"
+    # Function to download channel content
+    echo -e "\e[32mEnter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):"
     
     while true; do
         read -p "> " channel_id
-        channel_url="https://www.youtube.com/channel/$channel_id"
-        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
-        channel_name=$(sanitize_folder_name "$channel_name")
 
+        # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
+        if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
+            echo -e "\e[31mInvalid Channel ID! It must start with 'UC' and contain only alphanumeric characters, dashes, or underscores.\e[0m"
+            continue
+        fi
+
+        # Construct the channel URL using the provided Channel ID
+        channel_url="https://www.youtube.com/channel/$channel_id"
+
+        # Attempt to fetch the channel name
+        channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
+        if [[ -z "$channel_name" ]]; then
+            echo -e "\e[31mFailed to fetch channel name. Please ensure the Channel ID is correct.\e[0m"
+            echo -e "Would you like to manually enter the channel name? (y/n)"
+            read -p "> " manual_input
+            if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
+                echo -e "Enter the channel name manually:"
+                read -p "> " channel_name
+                channel_name=$(sanitize_folder_name "$channel_name")
+            else
+                echo -e "\e[31mOperation canceled. Returning to the main menu.\e[0m"
+                break
+            fi
+        else
+            channel_name=$(sanitize_folder_name "$channel_name")
+        fi
+
+        # Create the channel folder
         channel_folder="$channel_dir/$channel_name"
         mkdir -p "$channel_folder"
 
@@ -107,15 +117,26 @@ elif [[ $choice == "4" ]]; then
         echo -e "2. Video (MP4 format)"
         read -p "> " media_choice
 
-        if [[ $media_choice == "1" ]]; then
+        case $media_choice in
+        1) 
+            echo -e "Downloading audio from the channel..."
             yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
-        elif [[ $media_choice == "2" ]]; then
+            ;;
+        2) 
+            echo -e "Downloading video from the channel..."
             yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
-        fi
+            ;;
+        *)
+            echo -e "\e[31mInvalid choice. Please select 1 or 2.\e[0m"
+            continue
+            ;;
+        esac
 
-        echo -e "${GREEN}Content downloaded to: $channel_folder${NC}"
+        # Confirm the download location
+        echo -e "\e[32mContent downloaded to: $channel_folder\e[0m"
         break
     done
+    echo -e "\e[32mDownload completed!\e[0m"
 else
-    echo -e "${RED}Invalid choice. Restart the bot.${NC}"
+    echo -e "\e[31mInvalid choice. Restart the bot.\e[0m"
 fi
