@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.9
+# YouTube Downloader Bot - Version 1.10
 script_version="1.10"
 
 # Configuration file for user preferences
