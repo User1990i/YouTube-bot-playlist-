@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.10
-script_version="1.10"
+# YouTube Downloader Bot - Version 1.11
+script_version="1.11"
 
 # Configuration file for user preferences
 config_file="$HOME/.ytdlrc"
@@ -105,15 +105,6 @@ setup_guide() {
         echo "UPDATE_URL=\"$update_url\"" >> "$config_file"
     fi
     
-    # Add YT command to bashrc
-    echo -e "${WHITE}Add 'YT' command to bashrc? (y/n)${NC}"
-    read -p "> " add_to_bashrc
-    if [[ "$add_to_bashrc" == "y" ]]; then
-        echo "alias YT='bash ~/youtube_bot.sh'" >> "$HOME/.bashrc"
-        source "$HOME/.bashrc"
-        echo -e "${GREEN}YT command added to bashrc!${NC}"
-    fi
-    
     echo -e "${RED}Setup complete! You can now use the bot easily.${NC}"
     read -p "Press Enter to continue."
     main_menu
@@ -133,7 +124,7 @@ exit_bot() {
 
 # Auto-update feature
 auto_update() {
-    update_url=${UPDATE_URL:-"https://raw.githubusercontent.com/User1990i/YouTube-bot-playlist-/refs/heads/main/YouTube_bot%2Bextra%20.sh"}
+    update_url=${UPDATE_URL:-"https://raw.githubusercontent.com/User1990i/YouTube-bot-playlist-/refs/heads/main/youtube_bot.sh"}
     echo -e "${RED}Checking for updates...${NC}"
     curl -o ~/youtube_bot.sh "$update_url" 2>/dev/null
     if [[ $? -eq 0 ]]; then
@@ -331,10 +322,10 @@ download_channel() {
         channel_name=$(yt-dlp --get-uploader "$channel_url" 2>/dev/null)
         if [[ -z "$channel_name" ]]; then
             echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
-            echo -e "${WHITE}Would you like to manually enter the channel name? (y/n)${NC}"
+            echo -e "Would you like to manually enter the channel name? (y/n)"
             read -p "> " manual_input
             if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
-                echo -e "${WHITE}Enter the channel name manually:${NC}"
+                echo -e "Enter the channel name manually:"
                 read -p "> " channel_name
                 channel_name=$(sanitize_folder_name "$channel_name")
             else
@@ -516,13 +507,36 @@ main_menu() {
     esac
 }
 
-# Check for command-line arguments
-if [[ "$1" == "--update" ]]; then
-    auto_update
-elif [[ "$1" == "--help" ]]; then
-    help_menu
-    exit 0
-fi
+# Function to check if the script is installed
+is_installed() {
+    if [[ -f "$config_file" && -f "$HOME/youtube_bot.sh" ]]; then
+        return 0  # Installed
+    else
+        return 1  # Not installed
+    fi
+}
 
-# Start script
-main_menu
+# Function to install the bot
+install_bot() {
+    echo -e "${RED}Downloading YouTube Downloader Bot...${NC}"
+    curl -o ~/youtube_bot.sh "https://raw.githubusercontent.com/User1990i/YouTube-bot-playlist-/refs/heads/main/youtube_bot.sh" 2>/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}Failed to download the bot script. Please check your internet connection.${NC}"
+        exit 1
+    fi
+
+    # Make the script executable
+    echo -e "${RED}Making the script executable...${NC}"
+    chmod +x ~/youtube_bot.sh
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}Failed to make the script executable. Please check your permissions.${NC}"
+        exit 1
+    fi
+
+    # Add the YT alias to ~/.bashrc
+    echo -e "${RED}Adding 'YT' command to ~/.bashrc...${NC}"
+    if grep -Fxq "alias YT='bash ~/youtube_bot.sh'" "$HOME/.bashrc"; then
+        echo -e "${RED}Alias 'YT' already exists in ~/.bashrc.${NC}"
+    else
+        echo "alias YT='bash ~/youtube_bot.sh'" >> "$HOME/.bashrc"
+        echo -e "${GREEN}Alias 'YT' added to ~/.bashrc.${NC}
