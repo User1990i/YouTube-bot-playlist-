@@ -538,5 +538,41 @@ install_bot() {
     if grep -Fxq "alias YT='bash ~/youtube_bot.sh'" "$HOME/.bashrc"; then
         echo -e "${RED}Alias 'YT' already exists in ~/.bashrc.${NC}"
     else
-        echo "alias YT='bash ~/youtube_bot.sh'" >> "$HOME/.bashrc"
-        echo -e "${GREEN}Alias 'YT' added to ~/.bashrc.${NC}
+                echo "alias YT='bash ~/youtube_bot.sh'" >> "$HOME/.bashrc"
+        echo -e "${GREEN}Alias 'YT' added to ~/.bashrc.${NC}"
+    fi
+
+    # Source the ~/.bashrc file
+    echo -e "${RED}Sourcing ~/.bashrc to apply changes...${NC}"
+    source "$HOME/.bashrc"
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}~/.bashrc sourced successfully! You can now use the 'YT' command.${NC}"
+    else
+        echo -e "${RED}Failed to source ~/.bashrc. Please run 'source ~/.bashrc' manually.${NC}"
+    fi
+
+    # Run the setup guide
+    echo -e "${RED}Running setup guide to customize your bot...${NC}"
+    bash ~/youtube_bot.sh 6
+}
+
+# Check for command-line arguments
+if [[ "$1" == "--update" ]]; then
+    auto_update
+elif [[ "$1" == "--help" ]]; then
+    help_menu
+    exit 0
+elif [[ "$1" == "--install" ]]; then
+    install_bot
+    exit 0
+fi
+
+# Check if the bot is installed
+if ! is_installed; then
+    echo -e "${RED}Bot not installed. Running installation...${NC}"
+    install_bot
+    exit 0
+fi
+
+# Start script
+main_menu
