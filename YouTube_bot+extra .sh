@@ -12,7 +12,7 @@ playlist_dir="$base_dir/playlists"
 channel_dir="$base_dir/Channels"
 mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"  # Create necessary directories
 
-# Color Scheme (Customizable via config)
+# Color Scheme (Red and White Only)
 RED='\033[0;31m'
 WHITE='\033[1;37m'
 NC='\033[0m'  # No color
@@ -43,7 +43,7 @@ show_banner() {
     echo -e "⠀⠀⢻⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣇⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀"
     echo -e "⠀⠀⣠⣻⡿⠿⢿⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣻⣥⠀⠀"
     echo -e "⠀⠀⣿⣿⣿⣿⣿⣿⣿⡿⣟⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀"
-    echo -e "⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⡹⡜⠋⡾⣼⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀"
+    echo -e "⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⡹⡜⠋⡾⣼⣿⣿⣿⣿⣿⣿⣿⡇⠀"
     echo -e "⠀⠀⣿⣻⣾⣭⣝⣛⣛⣛⣛⣃⣿⣾⣇⣛⣛⣛⣛⣯⣭⣷⣿⣿⡇⠀"
     echo -e "⠀⠰⢿⣿⣎⠙⠛⢻⣿⡿⠿⠟⣿⣿⡟⠿⠿⣿⡛⠛⠋⢹⣿⡿⢳⠀"
     echo -e "⠀⠘⣦⡙⢿⣦⣀⠀⠀⠀⢀⣼⣿⣿⣳⣄⠀⠀⠀⢀⣠⡿⢛⣡⡏⠀"
@@ -184,7 +184,7 @@ download_audio() {
             fi
             
             if [ $? -eq 0 ]; then
-                echo -e "${WHITE}Download completed!${NC}"
+                echo -e "${WHITE}Download completed successfully!${NC}"
                 echo "Downloaded $(date): $youtube_link" >> "$base_dir/recent.log"
             else
                 echo -e "${RED}Download failed. Check logs.${NC}"
@@ -224,7 +224,7 @@ download_video() {
             fi
             
             if [ $? -eq 0 ]; then
-                echo -e "${WHITE}Download completed!${NC}"
+                echo -e "${WHITE}Download completed successfully!${NC}"
                 echo "Downloaded $(date): $youtube_link" >> "$base_dir/recent.log"
             else
                 echo -e "${RED}Download failed. Check logs.${NC}"
@@ -270,17 +270,21 @@ download_playlist() {
             go_back
         fi
         
-        # Build command with optional flags
-        cmd="yt-dlp --yes-playlist"
-        if [[ "$playlist_choice" == "1" ]]; then
+        if [[ $playlist_choice == "1" ]]; then
             echo -e "Choose format:"
             echo -e "1. FLAC (lossless)"
             echo -e "2. MP3 (compressed)"
             read -p "Enter your choice (1 or 2): " audio_format_choice
-            if [[ "$audio_format_choice" == "1" ]]; then cmd+=" -x --audio-format flac"; fi
-            if [[ "$audio_format_choice" == "2" ]]; then cmd+=" -x --audio-format mp3"; fi
-        elif [[ "$playlist_choice" == "2" ]]; then
-            cmd+=" -f \"bestvideo+bestaudio/best\" --merge-output-format mp4"
+            if [[ "$audio_format_choice" == "1" ]]; then
+                cmd="yt-dlp --yes-playlist -x --audio-format flac"
+            elif [[ "$audio_format_choice" == "2" ]]; then
+                cmd="yt-dlp --yes-playlist -x --audio-format mp3"
+            else
+                echo -e "${RED}Invalid choice. Restart the bot.${NC}"
+                go_back
+            fi
+        elif [[ $playlist_choice == "2" ]]; then
+            cmd="yt-dlp --yes-playlist -f \"bestvideo+bestaudio/best\" --merge-output-format mp4"
         else
             echo -e "${RED}Invalid choice. Restart the bot.${NC}"
             go_back
@@ -486,14 +490,14 @@ main_menu() {
     clear
     show_banner
     echo -e "${WHITE}Choose an option:${NC}"
-    echo -e "${WHITE}1. Download Audio (FLAC/MP3)${NC}"
-    echo -e "${WHITE}2. Download Video (choose quality)${NC}"
-    echo -e "${WHITE}3. Download Playlist (Audio/Video)${NC}"
-    echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
-    echo -e "${WHITE}5. Recent Downloads${NC}"
-    echo -e "${WHITE}6. Customize Bot Settings${NC}"
-    echo -e "${WHITE}7. Help/Shortcuts${NC}"
-    echo -e "${WHITE}8. Exit${NC}"
+    echo -e "1. Download Audio (FLAC/MP3)"
+    echo -e "2. Download Video (choose quality)"
+    echo -e "3. Download Playlist (Audio/Video)"
+    echo -e "4. Download YouTube Channel Content"
+    echo -e "5. Recent Downloads"
+    echo -e "6. Customize Bot Settings"
+    echo -e "7. Help/Shortcuts"
+    echo -e "8. Exit"
     read -p "Enter your choice (1-8): " choice
 
     case $choice in
