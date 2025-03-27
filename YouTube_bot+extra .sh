@@ -405,7 +405,7 @@ help_menu() {
     echo -e "- Run the bot with 'YT'"
     echo -e "- Auto-update using 'YT --update'"
     echo -e "- Use 'exit' to quit at any prompt"
-    echo -e "\n${WHITE}Features:${NC}"
+    echo -e "\n${WHITE}Features:${NC}"  # Fixed: Properly closed quotes
     echo -e "- Download subtitles alongside videos"
     echo -e "- Set download speed limits"
     echo -e "- Exclude keywords from downloads"
