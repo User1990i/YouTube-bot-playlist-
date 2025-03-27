@@ -1,7 +1,7 @@
 #!/bin/bash
 # YouTube Downloader Bot - Version 1.12
 
-script_version="1.12"
+script_version="1.13"
 
 # Configuration file for user preferences
 config_file="$HOME/.ytdlrc"
