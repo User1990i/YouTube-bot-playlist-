@@ -11,11 +11,6 @@ playlist_dir="$base_dir/playlists"
 channel_dir="$base_dir/Channels"
 mkdir -p "$audio_dir" "$video_dir" "$playlist_dir" "$channel_dir"  # Create necessary directories
 
-# Color Scheme (Red and White Only)
-RED='\033[0;31m'
-WHITE='\033[1;37m'
-NC='\033[0m'  # No color
-
 # Function to sanitize folder names
 sanitize_folder_name() {
     local input="$1"
@@ -25,6 +20,13 @@ sanitize_folder_name() {
     sanitized=$(echo "$sanitized" | tr -d '\n\r')
     echo "${sanitized^}"  # Capitalize the first letter and trim to 50 characters
 }
+
+# Color Scheme for YouTube Red and White
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'  # No color
 
 # Show banner with ASCII art
 show_banner() {
@@ -62,35 +64,15 @@ go_back() {
     main_menu
 }
 
-# Exit function
-exit_bot() {
-    echo -e "${RED}Exiting the bot. Goodbye!${NC}"
-    exit 0
-}
-
-# Auto-update feature
-auto_update() {
-    echo -e "${RED}Checking for updates...${NC}"
-    curl -o ~/youtube_bot.sh "https://raw.githubusercontent.com/User1990i/YouTube-bot-playlist-/refs/heads/main/YouTube_bot%2Bextra%20.sh" 2>/dev/null
-    if [[ $? -eq 0 ]]; then
-        chmod +x ~/youtube_bot.sh
-        echo -e "${RED}Update successful! Restarting the bot...${NC}"
-        bash ~/youtube_bot.sh
-        exit 0
-    else
-        echo -e "${RED}Failed to update. Please check your internet connection.${NC}"
-    fi
-}
-
 # Main menu
 main_menu() {
     clear
     show_banner
-    echo -e "${WHITE}Choose an option:${NC}"
-    echo -e "${WHITE}1. Download Audio (FLAC format)${NC}"
-    echo -e "${WHITE}2. Download Video (choose quality)${NC}"
-    echo -e "${WHITE}3. Download Playlist (Audio or Video)${NC}"
-    echo -e "${WHITE}4. Download YouTube Channel Content${NC}"
+    echo -e "${YELLOW}Choose an option:${NC}"
+    echo -e "${BLUE}1. Download Audio (FLAC format)${NC}"
+    echo -e "${BLUE}2. Download Video (choose quality)${NC}"
+    echo -e "${BLUE}3. Download Playlist (Audio or Video)${NC}"
+    echo -e "${BLUE}4. Download YouTube Channel Content${NC}"
     read -p "Enter your choice (1, 2, 3, or 4): " choice
 
     case $choice in
@@ -118,15 +100,15 @@ validate_youtube_link() {
 # Function to download audio
 download_audio() {
     show_banner
-    echo -e "${WHITE}You selected to download audio in FLAC format.${NC}"
+    echo -e "${YELLOW}You selected to download audio in FLAC format.${NC}"
     echo -e "Paste a YouTube link and press Enter to download the song."
     while true; do
         read -p "> " youtube_link
         if validate_youtube_link "$youtube_link"; then
-            echo -e "${WHITE}Downloading audio in FLAC format from the provided link...${NC}"
+            echo -e "${GREEN}Downloading audio in FLAC format from the provided link...${NC}"
             yt-dlp -x --audio-format flac -o "$audio_dir/%(title)s.%(ext)s" "$youtube_link"
             if [ $? -eq 0 ]; then
-                echo -e "${WHITE}Download completed successfully!${NC}"
+                echo -e "${GREEN}Download completed successfully!${NC}"
                 echo -e "The song has been saved in: $audio_dir"
             else
                 echo -e "${RED}An error occurred while downloading the song. Please try again.${NC}"
@@ -142,17 +124,17 @@ download_audio() {
 # Function to download video
 download_video() {
     show_banner
-    echo -e "${WHITE}You selected to download video.${NC}"
+    echo -e "${YELLOW}You selected to download video.${NC}"
     echo -e "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
     read -p "Enter your preferred quality (e.g., 720p, best): " quality
     echo -e "Paste a YouTube link and press Enter to download the video."
     while true; do
         read -p "> " youtube_link
         if validate_youtube_link "$youtube_link"; then
-            echo -e "${WHITE}Downloading video in $quality quality from the provided link...${NC}"
+            echo -e "${GREEN}Downloading video in $quality quality from the provided link...${NC}"
             yt-dlp -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$youtube_link"
             if [ $? -eq 0 ]; then
-                echo -e "${WHITE}Download completed successfully!${NC}"
+                echo -e "${GREEN}Download completed successfully!${NC}"
                 echo -e "The video has been saved in: $video_dir"
             else
                 echo -e "${RED}An error occurred while downloading the video. Please try again.${NC}"
@@ -168,7 +150,7 @@ download_video() {
 # Function to download playlist
 download_playlist() {
     show_banner
-    echo -e "${WHITE}Downloading a playlist.${NC}"
+    echo -e "${YELLOW}Downloading a playlist.${NC}"
     echo "1. Download Playlist as Audio (FLAC)"
     echo "2. Download Playlist as Video (MP4)"
     read -p "Enter your choice (1 or 2): " playlist_choice
@@ -176,7 +158,7 @@ download_playlist() {
     read -p "> " playlist_link
 
     if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
-        echo -e "${WHITE}Fetching playlist metadata...${NC}"
+        echo -e "${GREEN}Fetching playlist metadata...${NC}"
         
         # Extract playlist name safely
         playlist_name=$(yt-dlp --get-title "$playlist_link" 2>/dev/null | head -n 1)
@@ -188,7 +170,7 @@ download_playlist() {
         playlist_name=$(sanitize_folder_name "$playlist_name")
         playlist_folder="$playlist_dir/$playlist_name"
         mkdir -p "$playlist_folder"
-        echo -e "${WHITE}Playlist folder created: $playlist_folder${NC}"
+        echo -e "${GREEN}Playlist folder created: $playlist_folder${NC}"
 
         # Permission check before writing logs
         if [[ ! -w "$playlist_folder" ]]; then
@@ -197,11 +179,11 @@ download_playlist() {
         fi
 
         if [[ $playlist_choice == "1" ]]; then
-            echo -e "${WHITE}Downloading playlist as FLAC...${NC}"
+            echo -e "${GREEN}Downloading playlist as FLAC...${NC}"
             yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
                 2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
         elif [[ $playlist_choice == "2" ]]; then
-            echo -e "${WHITE}Downloading playlist as MP4...${NC}"
+            echo -e "${GREEN}Downloading playlist as MP4...${NC}"
             yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
                 2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
         else
@@ -217,8 +199,8 @@ download_playlist() {
 # Function to download channel content
 download_channel() {
     show_banner
-    echo -e "${WHITE}Downloading YouTube channel content.${NC}"
-    echo -e "${WHITE}Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):${NC}"
+    echo -e "${YELLOW}Downloading YouTube channel content.${NC}"
+    echo -e "${BLUE}Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):${NC}"
     
     retries=3
     while [[ $retries -gt 0 ]]; do
@@ -238,10 +220,10 @@ download_channel() {
         channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
         if [[ -z "$channel_name" ]]; then
             echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
-            echo -e "${WHITE}Would you like to manually enter the channel name? (y/n)${NC}"
+            echo -e "Would you like to manually enter the channel name? (y/n)"
             read -p "> " manual_input
             if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
-                echo -e "${WHITE}Enter the channel name manually:${NC}"
+                echo -e "Enter the channel name manually:"
                 read -p "> " channel_name
                 channel_name=$(sanitize_folder_name "$channel_name")
             else
@@ -256,18 +238,18 @@ download_channel() {
         channel_folder="$channel_dir/$channel_name"
         mkdir -p "$channel_folder"
 
-        echo -e "${WHITE}Download as:${NC}"
-        echo -e "${WHITE}1. Audio (FLAC format)${NC}"
-        echo -e "${WHITE}2. Video (MP4 format)${NC}"
+        echo -e "Download as:"
+        echo -e "${BLUE}1. Audio (FLAC format)${NC}"
+        echo -e "${BLUE}2. Video (MP4 format)${NC}"
         read -p "> " media_choice
 
         case $media_choice in
         1) 
-            echo -e "${WHITE}Downloading audio from the channel...${NC}"
+            echo -e "${GREEN}Downloading audio from the channel...${NC}"
             yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         2) 
-            echo -e "${WHITE}Downloading video from the channel...${NC}"
+            echo -e "${GREEN}Downloading video from the channel...${NC}"
             yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         *)
@@ -277,7 +259,7 @@ download_channel() {
         esac
 
         # Confirm the download location
-        echo -e "${WHITE}Content downloaded to: $channel_folder${NC}"
+        echo -e "${GREEN}Content downloaded to: $channel_folder${NC}"
         break
     done
     go_back
