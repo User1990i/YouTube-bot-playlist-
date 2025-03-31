@@ -151,9 +151,37 @@ download_video() {
 download_playlist() {
     show_banner
     echo -e "${YELLOW}Downloading a playlist.${NC}"
-    echo "1. Download Playlist as Audio (FLAC)"
-    echo "2. Download Playlist as Video (MP4)"
+    echo "Choose the type of content to download:"
+    echo "1. Audio (FLAC or MP3)"
+    echo "2. Video (choose quality)"
     read -p "Enter your choice (1 or 2): " playlist_choice
+
+    if [[ $playlist_choice == "1" ]]; then
+        # Audio download
+        echo "Choose the audio format:"
+        echo "1. FLAC"
+        echo "2. MP3"
+        read -p "Enter your choice (1 or 2): " audio_format_choice
+
+        case $audio_format_choice in
+        1) audio_format="flac" ;;
+        2) audio_format="mp3" ;;
+        *) 
+            echo -e "${RED}Invalid choice. Restarting...${NC}"
+            download_playlist
+            return
+            ;;
+        esac
+    elif [[ $playlist_choice == "2" ]]; then
+        # Video download
+        echo "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
+        read -p "Enter your preferred quality (e.g., 720p, best): " quality
+    else
+        echo -e "${RED}Invalid choice. Restarting...${NC}"
+        download_playlist
+        return
+    fi
+
     echo "Paste a YouTube playlist link."
     read -p "> " playlist_link
 
@@ -179,16 +207,13 @@ download_playlist() {
         fi
 
         if [[ $playlist_choice == "1" ]]; then
-            echo -e "${GREEN}Downloading playlist as FLAC...${NC}"
-            yt-dlp --yes-playlist -x --audio-format flac -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
+            echo -e "${GREEN}Downloading playlist as ${audio_format^^}...${NC}"
+            yt-dlp --yes-playlist -x --audio-format "$audio_format" --audio-quality 0 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
                 2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
         elif [[ $playlist_choice == "2" ]]; then
-            echo -e "${GREEN}Downloading playlist as MP4...${NC}"
-            yt-dlp --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
+            echo -e "${GREEN}Downloading playlist as MP4 in $quality quality...${NC}"
+            yt-dlp --yes-playlist -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
                 2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
-        else
-            echo -e "${RED}Invalid choice. Restart the bot.${NC}"
-            go_back
         fi
     else
         echo -e "${RED}Invalid playlist link.${NC}"
@@ -239,18 +264,36 @@ download_channel() {
         mkdir -p "$channel_folder"
 
         echo -e "Download as:"
-        echo -e "${BLUE}1. Audio (FLAC format)${NC}"
-        echo -e "${BLUE}2. Video (MP4 format)${NC}"
+        echo -e "${BLUE}1. Audio (FLAC or MP3)${NC}"
+        echo -e "${BLUE}2. Video (choose quality)${NC}"
         read -p "> " media_choice
 
         case $media_choice in
         1) 
-            echo -e "${GREEN}Downloading audio from the channel...${NC}"
-            yt-dlp -f bestaudio --extract-audio --audio-format flac --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            echo "Choose the audio format:"
+            echo "1. FLAC"
+            echo "2. MP3"
+            read -p "Enter your choice (1 or 2): " audio_format_choice
+
+            case $audio_format_choice in
+            1) audio_format="flac" ;;
+            2) audio_format="mp3" ;;
+            *) 
+                echo -e "${RED}Invalid choice. Restarting...${NC}"
+                download_channel
+                return
+                ;;
+            esac
+
+            echo -e "${GREEN}Downloading audio from the channel as ${audio_format^^}...${NC}"
+            yt-dlp -f bestaudio --extract-audio --audio-format "$audio_format" --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         2) 
-            echo -e "${GREEN}Downloading video from the channel...${NC}"
-            yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            echo "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
+            read -p "Enter your preferred quality (e.g., 720p, best): " quality
+
+            echo -e "${GREEN}Downloading video from the channel in $quality quality...${NC}"
+            yt-dlp -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         *)
             echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
