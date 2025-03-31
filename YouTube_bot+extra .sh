@@ -73,15 +73,13 @@ main_menu() {
     echo -e "${BLUE}2. Download Video (choose quality)${NC}"
     echo -e "${BLUE}3. Download Playlist (Audio or Video)${NC}"
     echo -e "${BLUE}4. Download YouTube Channel Content${NC}"
-    echo -e "${BLUE}5. Batch Process Multiple Links${NC}"
-    read -p "Enter your choice (1, 2, 3, 4, or 5): " choice
+    read -p "Enter your choice (1, 2, 3, or 4): " choice
 
     case $choice in
     1) download_audio ;;
     2) download_video ;;
     3) download_playlist ;;
     4) download_channel ;;
-    5) batch_process ;;
     *) 
         echo -e "${RED}Invalid choice. Please try again.${NC}"
         main_menu
@@ -297,120 +295,83 @@ download_channel() {
         channel_folder="$channel_dir/$channel_name"
         mkdir -p "$channel_folder"
 
-        echo -e "Download as:"
-        echo -e "${BLUE}1. Audio (FLAC or MP3)${NC}"
-        echo -e "${BLUE}2. Video (choose quality)${NC}"
-        read -p "> " media_choice
+        echo -e "Choose the type of content to download:"
+        echo -e "${BLUE}1. Shorts${NC}"
+        echo -e "${BLUE}2. Videos (Filter by duration)${NC}"
+        echo -e "${BLUE}3. Playlists${NC}"
+        read -p "Enter your choice (1, 2, or 3): " content_type
 
-        case $media_choice in
-        1) 
-            echo "Choose the audio format:"
-            echo "1. FLAC"
-            echo "2. MP3"
-            read -p "Enter your choice (1 or 2): " audio_format_choice
+        case $content_type in
+        1)
+            # Download Shorts
+            echo -e "${GREEN}Downloading Shorts from the channel...${NC}"
+            yt-dlp --continue --match-filter "duration < 60" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            ;;
+        2)
+            # Download Videos with duration filter
+            echo -e "Filter videos by duration:"
+            echo -e "${BLUE}1. All videos${NC}"
+            echo -e "${BLUE}2. Videos longer than 1 hour${NC}"
+            echo -e "${BLUE}3. Videos shorter than 30 minutes${NC}"
+            read -p "Enter your choice (1, 2, or 3): " duration_filter
 
-            case $audio_format_choice in
-            1) audio_format="flac" ;;
-            2) audio_format="mp3" ;;
-            *) 
+            case $duration_filter in
+            1)
+                match_filter=""
+                echo -e "${GREEN}Downloading all videos from the channel...${NC}"
+                ;;
+            2)
+                match_filter="duration > 3600"
+                echo -e "${GREEN}Downloading videos longer than 1 hour from the channel...${NC}"
+                ;;
+            3)
+                match_filter="duration < 1800"
+                echo -e "${GREEN}Downloading videos shorter than 30 minutes from the channel...${NC}"
+                ;;
+            *)
                 echo -e "${RED}Invalid choice. Restarting...${NC}"
                 download_channel
                 return
                 ;;
             esac
 
-            echo -e "${GREEN}Downloading audio from the channel as ${audio_format^^}...${NC}"
-            yt-dlp --continue -f bestaudio --extract-audio --audio-format "$audio_format" --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            yt-dlp --continue --match-filter "$match_filter" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
-        2) 
-            echo "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
-            read -p "Enter your preferred quality (e.g., 720p, best): " quality
-            echo -e "Would you like to include subtitles? (y/n)"
-            read -p "> " include_subtitles
-
-            if [[ $include_subtitles == "y" || $include_subtitles == "Y" ]]; then
-                subtitle_flag="--write-sub --sub-lang en"
-            else
-                subtitle_flag=""
-            fi
-
-            echo -e "${GREEN}Downloading video from the channel in $quality quality...${NC}"
-            yt-dlp --continue $subtitle_flag -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+        3)
+            # Download Playlists
+            echo -e "${GREEN}Downloading playlists from the channel...${NC}"
+            yt-dlp --continue --flat-playlist --yes-playlist -o "$channel_folder/%(playlist_title)s/%(title)s.%(ext)s" "$channel_url"
             ;;
         *)
-            echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
-            continue
+            echo -e "${RED}Invalid choice. Restarting...${NC}"
+            download_channel
+            return
             ;;
         esac
+
+        # Save locally or upload to Google Drive
+        echo -e "Where would you like to save the downloaded content?"
+        echo -e "${BLUE}1. Save Locally${NC}"
+        echo -e "${BLUE}2. Backup to Google Drive${NC}"
+        read -p "Enter your choice (1 or 2): " save_option
+
+        if [[ $save_option == "2" ]]; then
+            echo -e "${YELLOW}Uploading to Google Drive...${NC}"
+            rclone copy "$channel_folder" "google-drive:/YouTube_Channel_Backups/$channel_name" --progress
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}Upload to Google Drive completed successfully!${NC}"
+            else
+                echo -e "${RED}An error occurred while uploading to Google Drive.${NC}"
+            fi
+        else
+            echo -e "${GREEN}Content saved locally in: $channel_folder${NC}"
+        fi
 
         # Confirm the download location
         echo -e "${GREEN}Content downloaded to: $channel_folder${NC}"
         break
     done
     go_back
-}
-batch_process() { show_banner echo -e "${YELLOW}Batch Processing Mode.${NC}" echo -e "Paste multiple YouTube links (one per line). Press Ctrl+D when done." mapfile -t links
-
-if [[ ${#links[@]} -eq 0 ]]; then
-    echo -e "${RED}No links provided. Returning to the main menu.${NC}"
-    go_back
-    return
-fi
-
-echo -e "Choose the download type:"
-options=("Audio (FLAC/MP3)" "Video (Select Quality)" "Playlist" "Channel Content")
-select choice in "${options[@]}"; do
-    case $REPLY in
-        1) mode="audio"; break;;
-        2) mode="video"; break;;
-        3) mode="playlist"; break;;
-        4) mode="channel"; break;;
-        *) echo -e "${RED}Invalid selection. Try again.${NC}";;
-    esac
-done
-
-if [[ $mode == "audio" ]]; then
-    formats=("FLAC" "MP3")
-    select fmt in "${formats[@]}"; do
-        case $REPLY in
-            1) audio_format="flac"; break;;
-            2) audio_format="mp3"; break;;
-            *) echo -e "${RED}Invalid selection. Try again.${NC}";;
-        esac
-    done
-elif [[ $mode == "video" ]]; then
-    read -p "Enter preferred quality (e.g., 720p, best): " quality
-    read -p "Include subtitles? (y/n): " include_subs
-    [[ $include_subs =~ ^[Yy]$ ]] && subtitle_flag="--write-sub --sub-lang en" || subtitle_flag=""
-fi
-
-echo -e "${GREEN}Starting batch download...${NC}"
-for link in "${links[@]}"; do
-    echo -e "${YELLOW}Processing: $link${NC}"
-    case $mode in
-        "audio")
-            yt-dlp --continue -x --audio-format "$audio_format" --audio-quality 0 -o "$audio_dir/%(title)s.%(ext)s" "$link" &
-            ;;
-        "video")
-            yt-dlp --continue $subtitle_flag -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$link" &
-            ;;
-        "playlist")
-            folder="$playlist_dir/$(yt-dlp --get-title "$link" | head -n 1)"
-            mkdir -p "$folder"
-            yt-dlp --continue --yes-playlist -f best -o "$folder/%(title)s.%(ext)s" "$link" &
-            ;;
-        "channel")
-            folder="$channel_dir/$(yt-dlp --get-filename -o "%(uploader)s" "$link")"
-            mkdir -p "$folder"
-            yt-dlp --continue --download-archive "$folder/archive.txt" -f best -o "$folder/%(title)s.%(ext)s" "$link" &
-            ;;
-    esac
-done
-
-wait  # Wait for all background jobs to finish
-echo -e "${GREEN}Batch processing completed!${NC}"
-go_back
-
 }
 
 # Start script
