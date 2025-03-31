@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.7
-script_version="1.7"
+# YouTube Downloader Bot - Version 1.9
+script_version="1.9"
 
 # Define output directories (No spaces in paths)
 base_dir="/storage/emulated/0/Music_Vids"
@@ -69,17 +69,19 @@ main_menu() {
     clear
     show_banner
     echo -e "${YELLOW}Choose an option:${NC}"
-    echo -e "${BLUE}1. Download Audio (FLAC format)${NC}"
+    echo -e "${BLUE}1. Download Audio (FLAC or MP3 format)${NC}"
     echo -e "${BLUE}2. Download Video (choose quality)${NC}"
     echo -e "${BLUE}3. Download Playlist (Audio or Video)${NC}"
     echo -e "${BLUE}4. Download YouTube Channel Content${NC}"
-    read -p "Enter your choice (1, 2, 3, or 4): " choice
+    echo -e "${BLUE}5. Batch Process Multiple Links${NC}"
+    read -p "Enter your choice (1, 2, 3, 4, or 5): " choice
 
     case $choice in
     1) download_audio ;;
     2) download_video ;;
     3) download_playlist ;;
     4) download_channel ;;
+    5) batch_process ;;
     *) 
         echo -e "${RED}Invalid choice. Please try again.${NC}"
         main_menu
@@ -100,13 +102,28 @@ validate_youtube_link() {
 # Function to download audio
 download_audio() {
     show_banner
-    echo -e "${YELLOW}You selected to download audio in FLAC format.${NC}"
+    echo -e "${YELLOW}You selected to download audio.${NC}"
+    echo "Choose the audio format:"
+    echo "1. FLAC"
+    echo "2. MP3"
+    read -p "Enter your choice (1 or 2): " audio_format_choice
+
+    case $audio_format_choice in
+    1) audio_format="flac" ;;
+    2) audio_format="mp3" ;;
+    *) 
+        echo -e "${RED}Invalid choice. Restarting...${NC}"
+        download_audio
+        return
+        ;;
+    esac
+
     echo -e "Paste a YouTube link and press Enter to download the song."
     while true; do
         read -p "> " youtube_link
         if validate_youtube_link "$youtube_link"; then
-            echo -e "${GREEN}Downloading audio in FLAC format from the provided link...${NC}"
-            yt-dlp -x --audio-format flac -o "$audio_dir/%(title)s.%(ext)s" "$youtube_link"
+            echo -e "${GREEN}Downloading audio in ${audio_format^^} format from the provided link...${NC}"
+            yt-dlp --continue -x --audio-format "$audio_format" --audio-quality 0 -o "$audio_dir/%(title)s.%(ext)s" "$youtube_link"
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}Download completed successfully!${NC}"
                 echo -e "The song has been saved in: $audio_dir"
@@ -127,12 +144,21 @@ download_video() {
     echo -e "${YELLOW}You selected to download video.${NC}"
     echo -e "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
     read -p "Enter your preferred quality (e.g., 720p, best): " quality
+    echo -e "Would you like to include subtitles? (y/n)"
+    read -p "> " include_subtitles
+
+    if [[ $include_subtitles == "y" || $include_subtitles == "Y" ]]; then
+        subtitle_flag="--write-sub --sub-lang en"
+    else
+        subtitle_flag=""
+    fi
+
     echo -e "Paste a YouTube link and press Enter to download the video."
     while true; do
         read -p "> " youtube_link
         if validate_youtube_link "$youtube_link"; then
             echo -e "${GREEN}Downloading video in $quality quality from the provided link...${NC}"
-            yt-dlp -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$youtube_link"
+            yt-dlp --continue $subtitle_flag -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$youtube_link"
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}Download completed successfully!${NC}"
                 echo -e "The video has been saved in: $video_dir"
@@ -176,6 +202,14 @@ download_playlist() {
         # Video download
         echo "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
         read -p "Enter your preferred quality (e.g., 720p, best): " quality
+        echo -e "Would you like to include subtitles? (y/n)"
+        read -p "> " include_subtitles
+
+        if [[ $include_subtitles == "y" || $include_subtitles == "Y" ]]; then
+            subtitle_flag="--write-sub --sub-lang en"
+        else
+            subtitle_flag=""
+        fi
     else
         echo -e "${RED}Invalid choice. Restarting...${NC}"
         download_playlist
@@ -208,11 +242,11 @@ download_playlist() {
 
         if [[ $playlist_choice == "1" ]]; then
             echo -e "${GREEN}Downloading playlist as ${audio_format^^}...${NC}"
-            yt-dlp --yes-playlist -x --audio-format "$audio_format" --audio-quality 0 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
+            yt-dlp --continue --yes-playlist -x --audio-format "$audio_format" --audio-quality 0 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
                 2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
         elif [[ $playlist_choice == "2" ]]; then
             echo -e "${GREEN}Downloading playlist as MP4 in $quality quality...${NC}"
-            yt-dlp --yes-playlist -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
+            yt-dlp --continue --yes-playlist $subtitle_flag -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
                 2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
         fi
     else
@@ -286,14 +320,22 @@ download_channel() {
             esac
 
             echo -e "${GREEN}Downloading audio from the channel as ${audio_format^^}...${NC}"
-            yt-dlp -f bestaudio --extract-audio --audio-format "$audio_format" --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            yt-dlp --continue -f bestaudio --extract-audio --audio-format "$audio_format" --audio-quality 0 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         2) 
             echo "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
             read -p "Enter your preferred quality (e.g., 720p, best): " quality
+            echo -e "Would you like to include subtitles? (y/n)"
+            read -p "> " include_subtitles
+
+            if [[ $include_subtitles == "y" || $include_subtitles == "Y" ]]; then
+                subtitle_flag="--write-sub --sub-lang en"
+            else
+                subtitle_flag=""
+            fi
 
             echo -e "${GREEN}Downloading video from the channel in $quality quality...${NC}"
-            yt-dlp -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            yt-dlp --continue $subtitle_flag -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
             ;;
         *)
             echo -e "${RED}Invalid choice. Please select 1 or 2.${NC}"
@@ -305,6 +347,67 @@ download_channel() {
         echo -e "${GREEN}Content downloaded to: $channel_folder${NC}"
         break
     done
+    go_back
+}
+
+# Batch processing function
+batch_process() {
+    show_banner
+    echo -e "${YELLOW}Batch Processing Mode.${NC}"
+    echo -e "Paste multiple YouTube links (one per line). Press Ctrl+D when done."
+    mapfile -t links
+
+    echo -e "Choose the download type:"
+    echo -e "${BLUE}1. Audio (FLAC or MP3)${NC}"
+    echo -e "${BLUE}2. Video (choose quality)${NC}"
+    read -p "Enter your choice (1 or 2): " batch_choice
+
+    if [[ $batch_choice == "1" ]]; then
+        echo "Choose the audio format:"
+        echo "1. FLAC"
+        echo "2. MP3"
+        read -p "Enter your choice (1 or 2): " audio_format_choice
+
+        case $audio_format_choice in
+        1) audio_format="flac" ;;
+        2) audio_format="mp3" ;;
+        *) 
+            echo -e "${RED}Invalid choice. Restarting...${NC}"
+            batch_process
+            return
+            ;;
+        esac
+    elif [[ $batch_choice == "2" ]]; then
+        echo "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
+        read -p "Enter your preferred quality (e.g., 720p, best): " quality
+        echo -e "Would you like to include subtitles? (y/n)"
+        read -p "> " include_subtitles
+
+        if [[ $include_subtitles == "y" || $include_subtitles == "Y" ]]; then
+            subtitle_flag="--write-sub --sub-lang en"
+        else
+            subtitle_flag=""
+        fi
+    else
+        echo -e "${RED}Invalid choice. Restarting...${NC}"
+        batch_process
+        return
+    fi
+
+    for link in "${links[@]}"; do
+        if validate_youtube_link "$link"; then
+            echo -e "${GREEN}Processing link: $link${NC}"
+            if [[ $batch_choice == "1" ]]; then
+                yt-dlp --continue -x --audio-format "$audio_format" --audio-quality 0 -o "$audio_dir/%(title)s.%(ext)s" "$link"
+            elif [[ $batch_choice == "2" ]]; then
+                yt-dlp --continue $subtitle_flag -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$video_dir/%(title)s.%(ext)s" "$link"
+            fi
+        else
+            echo -e "${RED}Invalid link: $link. Skipping...${NC}"
+        fi
+    done
+
+    echo -e "${GREEN}Batch processing completed!${NC}"
     go_back
 }
 
