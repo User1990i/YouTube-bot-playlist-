@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.13
+# YouTube Downloader Bot - Version 1.18
 script_version="1.18"
 
 # Define output directories (No spaces in paths)
@@ -36,20 +36,20 @@ show_banner() {
     echo -e "⠀⢸⣿⣄⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⣠⣿⡇⠀"
     echo -e "⠀⠸⣿⣿⣷⣦⣀⡴⢶⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⣴⣾⣿⣿⠇⠀"
     echo -e "⠀⠀⢻⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣇⣿⣿⣿⣿⣿⣿⣿⡟⠀⠀"
-    echo -e "⠀⠀⣠⣻⡿⠿⢿⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣻⣥⠀⠀"
+    echo -e "⠀⠀⣠⣻⡿⠿⢿⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣿⣻⣥⠀⠀"
     echo -e "⠀⠀⣿⣿⣿⣿⣿⣿⣿⡿⣟⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀"
     echo -e "⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⡹⡜⠋⡾⣼⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀"
     echo -e "⠀⠀⣿⣻⣾⣭⣝⣛⣛⣛⣛⣃⣿⣾⣇⣛⣛⣛⣛⣯⣭⣷⣿⣿⡇⠀"
     echo -e "⠀⠰⢿⣿⣎⠙⠛⢻⣿⡿⠿⠟⣿⣿⡟⠿⠿⣿⡛⠛⠋⢹⣿⡿⢳⠀"
     echo -e "⠀⠘⣦⡙⢿⣦⣀⠀⠀⠀⢀⣼⣿⣿⣳⣄⠀⠀⠀⢀⣠⡿⢛⣡⡏⠀"
     echo -e "⠀⠀⠹⣟⢿⣾⣿⣿⣿⣿⣿⣧⣿⣿⣧⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠀⠀"
-    echo -e "⠀⠀⢰⣿⣣⣿⣭⢿⣿⣱⣶⣿⣿⣿⣿⣿⣿⣷⣶⢹⣿⣭⣻⣶⣿⣿⠀⠀"
+    echo -e "⠀⠀⢰⣿⣣⣿⣭⢿⣿⣱⣶⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⢹⣿⣭⣻⣶⣿⣿⠀⠀"
     echo -e "⠀⠀⠈⣿⢿⣿⣿⠏⣿⣾⣛⠿⣿⣿⣿⠟⣻⣾⡏⢿⣿⣯⡿⡏⠀⠀"
     echo -e "⠀⠀⠤⠾⣟⣿⡁⠘⢨⣟⢻⡿⠾⠿⠾⢿⡛⣯⠘⠀⣸⣽⡛⠲⠄⠀"
     echo -e "⠀⠀⠀⠀⠘⣿⣧⠀⠸⠃⠈⠙⠛⠛⠉⠈⠁⠹⠀⠀⣿⡟⠀⠀⠀⠀"
     echo -e "⠀⠀⠀⠀⠀⢻⣿⣶⣀⣠⠀⠀⠀⠀⠀⠀⢠⡄⡄⣦⣿⠃⠀⠀⠀⠀"
     echo -e "⠀⠀⠀⠀⠀⠘⣿⣷⣻⣿⢷⢶⢶⢶⢆⣗⡿⣇⣷⣿⡿⠀⠀⠀⠀⠀"
-    echo -e "⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣛⣭⣭⣭⣭⣭⣻⣿⡿⠛⠀⠀⠀⠀⠀⠀"
+    echo -e "⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣛⣭⣭⣭⣭⣭⣭⣻⣿⡿⠛⠀⠀⠀⠀⠀⠀"
     echo -e "⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠿⠟⠛⠛⠛⠻⠿⠟⠀⠀⠀⠀⠀⠀⠀⠀"
     echo -e "${RED}==========================================="
     echo -e "          YouTube BOT         "
@@ -169,7 +169,6 @@ download_video() {
     done
     go_back
 }
-
 
 # Function to download playlist
 download_playlist() {
@@ -306,7 +305,7 @@ download_channel() {
     done
 
     # Define local storage folder
-    channel_folder="$HOME/YouTube_Channel_Backups/$channel_name"
+    channel_folder="$channel_dir/$channel_name"
     mkdir -p "$channel_folder"
 
     echo -e "${WHITE}Choose the type of content to download:${NC}"
@@ -503,50 +502,5 @@ use_existing_cloud_storage() {
     fi
 }
 
-# Main Script Execution
-main_menu() {
-    echo -e "${BLUE}Welcome to the YouTube Channel Backup Tool${NC}"
-    echo -e "${WHITE}1. Download YouTube Channel Content${NC}"
-    echo -e "${WHITE}2. Manage Cloud Storage${NC}"
-    echo -e "${WHITE}3. Exit${NC}"
-    read -p "Enter your choice (1, 2, or 3): " main_choice
-
-    case $main_choice in
-    1)
-        download_channel
-        ;;
-    2)
-        manage_cloud_storage
-        ;;
-    3)
-        echo -e "${WHITE}Exiting...${NC}"
-        exit 0
-        ;;
-    *)
-        echo -e "${RED}Invalid choice. Please try again.${NC}"
-        main_menu
-        ;;
-    esac
-}
-
-# Helper function to sanitize folder names
-sanitize_folder_name() {
-    echo "$1" | tr -cd '[:alnum:]._- ' | sed 's/ /_/g'
-}
-
-# Helper function to go back to the main menu
-go_back() {
-    echo -e "${WHITE}Returning to the main menu...${NC}"
-    main_menu
-}
-
-# Banner for the tool
-show_banner() {
-    echo -e "${BLUE}=====================================================================${NC}"
-    echo -e "${BLUE}               YouTube Channel Backup Tool                          ${NC}"
-    echo -e "${BLUE}=====================================================================${NC}"
-}
-
 # Start the script
 main_menu
-
