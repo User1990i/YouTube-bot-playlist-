@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # YouTube Downloader Bot - Version 1.13
-script_version="1.13"
+script_version="1.14"
 
 # Define output directories (No spaces in paths)
 base_dir="/storage/emulated/0/Music_Vids"
@@ -252,13 +252,13 @@ download_playlist() {
     fi
 }
 
-# Function to download channel content
+# Function to download channel content (direct upload to cloud storage)
 download_channel() {
     show_banner
     echo -e "${BLUE}Downloading YouTube Channel Content${NC}"
     echo -e "${WHITE}Where would you like to save the downloaded content?${NC}"
     echo -e "${WHITE}1. Save Locally${NC}"
-    echo -e "${WHITE}2. Backup to Cloud Storage${NC}"
+    echo -e "${WHITE}2. Backup Directly to Cloud Storage${NC}"
     read -p "Enter your choice (1 or 2): " save_option
 
     if [[ $save_option == "2" ]]; then
@@ -301,10 +301,6 @@ download_channel() {
             channel_name=$(sanitize_folder_name "$channel_name")
         fi
 
-        # Create the channel folder
-        channel_folder="$channel_dir/$channel_name"
-        mkdir -p "$channel_folder"
-
         break
     done
 
@@ -318,7 +314,8 @@ download_channel() {
     1)
         # Download Shorts
         echo -e "${WHITE}Downloading Shorts from the channel...${NC}"
-        yt-dlp --continue --match-filter "duration < 60" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+        yt-dlp --continue --match-filter "duration < 60" -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
+            -o "-" "$channel_url" | rclone rcat "$remote_name:/YouTube_Channel_Backups/$channel_name/shorts.mp4"
         ;;
     2)
         # Download Videos with duration filter
@@ -348,12 +345,13 @@ download_channel() {
             ;;
         esac
 
-        yt-dlp --continue --match-filter "$match_filter" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+        yt-dlp --continue --match-filter "$match_filter" -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
+            -o "-" "$channel_url" | rclone rcat "$remote_name:/YouTube_Channel_Backups/$channel_name/videos.mp4"
         ;;
     3)
         # Download Playlists Only
         echo -e "${WHITE}Downloading playlists from the channel...${NC}"
-        yt-dlp --continue --flat-playlist --yes-playlist -o "$channel_folder/%(playlist_title)s/%(title)s.%(ext)s" "$channel_url"
+        yt-dlp --continue --flat-playlist --yes-playlist -o "-" "$channel_url" | rclone rcat "$remote_name:/YouTube_Channel_Backups/$channel_name/playlists.mp4"
         ;;
     *)
         echo -e "${RED}Invalid choice. Restarting...${NC}"
@@ -362,21 +360,13 @@ download_channel() {
         ;;
     esac
 
-    # If Cloud Storage backup was selected, upload content
+    # Confirm the upload location
     if [[ $save_option == "2" ]]; then
-        echo -e "${WHITE}Uploading to Cloud Storage...${NC}"
-        rclone copy "$channel_folder" "$remote_name:/YouTube_Channel_Backups/$channel_name" --progress
-        if [ $? -eq 0 ]; then
-            echo -e "${WHITE}Upload to Cloud Storage completed successfully!${NC}"
-        else
-            echo -e "${RED}An error occurred while uploading to Cloud Storage.${NC}"
-        fi
+        echo -e "${WHITE}Content uploaded directly to: $remote_name:/YouTube_Channel_Backups/$channel_name${NC}"
     else
         echo -e "${WHITE}Content saved locally in: $channel_folder${NC}"
     fi
 
-    # Confirm the download location
-    echo -e "${WHITE}Content downloaded to: $channel_folder${NC}"
     go_back
 }
 
