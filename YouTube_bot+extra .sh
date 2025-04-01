@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # YouTube Downloader Bot - Version 1.13
-script_version="1.16"
+script_version="1.17"
 
 # Define output directories (No spaces in paths)
 base_dir="/storage/emulated/0/Music_Vids"
