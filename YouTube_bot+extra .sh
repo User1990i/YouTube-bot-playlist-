@@ -253,7 +253,7 @@ download_playlist() {
     fi
 }
 
-# Function to download channel content (direct upload to cloud storage with rate-limiting)
+# Function to download channel content
 download_channel() {
     show_banner
     echo -e "${BLUE}Downloading YouTube Channel Content${NC}"
@@ -311,7 +311,7 @@ download_channel() {
 
     echo -e "${WHITE}Choose the type of content to download:${NC}"
     echo -e "${WHITE}1. Shorts${NC}"
-    echo -e "${WHITE}2. Videos (Filter by duration)${NC}"
+    echo -e "${WHITE}2. Videos (Filter by duration and date)${NC}"
     echo -e "${WHITE}3. Playlists Only${NC}"
     read -p "Enter your choice (1, 2, or 3): " content_type
 
@@ -322,8 +322,19 @@ download_channel() {
             -o "$channel_folder/%(upload_date)s - %(title)s.%(ext)s" "$channel_url"
         ;;
     2)
-        echo -e "${WHITE}Downloading Videos (Filtered by duration)...${NC}"
-        yt-dlp --continue --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
+        echo -e "${WHITE}Downloading Videos (Filtered by duration and date)...${NC}"
+        echo -e "${WHITE}Enter minimum video length (in minutes):${NC}"
+        read -p "> " min_length
+        echo -e "${WHITE}Enter maximum video length (in minutes):${NC}"
+        read -p "> " max_length
+        echo -e "${WHITE}Enter start date (YYYYMMDD):${NC}"
+        read -p "> " start_date
+        echo -e "${WHITE}Enter end date (YYYYMMDD):${NC}"
+        read -p "> " end_date
+
+        yt-dlp --continue --yes-playlist \
+            --match-filter "duration > $((min_length * 60)) & duration < $((max_length * 60)) & upload_date >= $start_date & upload_date <= $end_date" \
+            -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
             -o "$channel_folder/%(upload_date)s - %(title)s.%(ext)s" "$channel_url"
         ;;
     3)
@@ -354,9 +365,18 @@ upload_to_cloud() {
     local destination="$2"
     retries=3
 
+    # Check cloud storage quota
+    echo -e "${WHITE}Checking cloud storage quota...${NC}"
+    quota_info=$(rclone about "$destination" 2>/dev/null)
+    if [[ $? -ne 0 ]]; then
+        echo -e "${RED}Failed to check cloud storage quota. Proceeding without quota check.${NC}"
+    else
+        echo -e "${WHITE}$quota_info${NC}"
+    fi
+
     while [[ $retries -gt 0 ]]; do
         echo -e "${WHITE}Uploading content to cloud storage...${NC}"
-        if rclone copy "$source" "$destination" --progress; then
+        if rclone copy "$source" "$destination" --progress --retries 3 --low-level-retries 5; then
             echo -e "${WHITE}Upload completed successfully!${NC}"
             return 0
         else
@@ -400,16 +420,40 @@ manage_cloud_storage() {
 add_cloud_storage() {
     echo -e "${WHITE}Adding a new cloud storage...${NC}"
     echo -e "${WHITE}Which cloud storage service would you like to use?${NC}"
-    echo -e "${WHITE}1. Google Drive${NC}"
-    echo -e "${WHITE}2. Dropbox${NC}"
-    echo -e "${WHITE}3. Other (Custom)${NC}"
-    read -p "Enter your choice (1, 2, or 3): " storage_choice
+    echo -e "${WHITE}1. Amazon S3${NC}"
+    echo -e "${WHITE}2. Backblaze B2${NC}"
+    echo -e "${WHITE}3. Box${NC}"
+    echo -e "${WHITE}4. Dropbox${NC}"
+    echo -e "${WHITE}5. FTP${NC}"
+    echo -e "${WHITE}6. Google Cloud Storage${NC}"
+    echo -e "${WHITE}7. Google Drive${NC}"
+    echo -e "${WHITE}8. Mega${NC}"
+    echo -e "${WHITE}9. Microsoft OneDrive${NC}"
+    echo -e "${WHITE}10. OpenDrive${NC}"
+    echo -e "${WHITE}11. pCloud${NC}"
+    echo -e "${WHITE}12. SFTP${NC}"
+    echo -e "${WHITE}13. WebDAV${NC}"
+    echo -e "${WHITE}14. Yandex Disk${NC}"
+    echo -e "${WHITE}15. Other (Custom)${NC}"
+    read -p "Enter your choice (1-15): " storage_choice
 
     case $storage_choice in
-    1) storage_type="drive" ;;
-    2) storage_type="dropbox" ;;
-    3) 
-        echo -e "${WHITE}Enter the custom storage type (e.g., s3, onedrive):${NC}"
+    1) storage_type="s3" ;;
+    2) storage_type="b2" ;;
+    3) storage_type="box" ;;
+    4) storage_type="dropbox" ;;
+    5) storage_type="ftp" ;;
+    6) storage_type="google cloud storage" ;;
+    7) storage_type="drive" ;;
+    8) storage_type="mega" ;;
+    9) storage_type="onedrive" ;;
+    10) storage_type="opendrive" ;;
+    11) storage_type="pcloud" ;;
+    12) storage_type="sftp" ;;
+    13) storage_type="webdav" ;;
+    14) storage_type="yandex" ;;
+    15) 
+        echo -e "${WHITE}Enter the custom storage type (e.g., sftp, webdav):${NC}"
         read -p "> " storage_type
         ;;
     *) 
@@ -460,4 +504,49 @@ use_existing_cloud_storage() {
 }
 
 # Main Script Execution
+main_menu() {
+    echo -e "${BLUE}Welcome to the YouTube Channel Backup Tool${NC}"
+    echo -e "${WHITE}1. Download YouTube Channel Content${NC}"
+    echo -e "${WHITE}2. Manage Cloud Storage${NC}"
+    echo -e "${WHITE}3. Exit${NC}"
+    read -p "Enter your choice (1, 2, or 3): " main_choice
+
+    case $main_choice in
+    1)
+        download_channel
+        ;;
+    2)
+        manage_cloud_storage
+        ;;
+    3)
+        echo -e "${WHITE}Exiting...${NC}"
+        exit 0
+        ;;
+    *)
+        echo -e "${RED}Invalid choice. Please try again.${NC}"
+        main_menu
+        ;;
+    esac
+}
+
+# Helper function to sanitize folder names
+sanitize_folder_name() {
+    echo "$1" | tr -cd '[:alnum:]._- ' | sed 's/ /_/g'
+}
+
+# Helper function to go back to the main menu
+go_back() {
+    echo -e "${WHITE}Returning to the main menu...${NC}"
+    main_menu
+}
+
+# Banner for the tool
+show_banner() {
+    echo -e "${BLUE}=====================================================================${NC}"
+    echo -e "${BLUE}               YouTube Channel Backup Tool                          ${NC}"
+    echo -e "${BLUE}=====================================================================${NC}"
+}
+
+# Start the script
 main_menu
+
