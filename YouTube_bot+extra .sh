@@ -264,19 +264,26 @@ download_channel() {
     read -p "Enter your choice (1 or 2): " save_option
 
     if [[ $save_option == "2" ]]; then
-        # Check if rclone is installed and configured
+        # Check if rclone is installed
         if ! command -v rclone &> /dev/null; then
-            echo -e "${RED}rclone is not installed. Please install and configure rclone first.${NC}"
-            echo -e "Install rclone with: sudo apt install rclone"
-            echo -e "Configure rclone with: rclone config"
-            go_back
+            echo -e "${RED}rclone is not installed. Installing rclone now...${NC}"
+            sudo apt update
+            sudo apt install rclone -y
         fi
 
         # Check if 'google-drive' remote exists in rclone config
         if ! rclone listremotes | grep -q "google-drive:"; then
-            echo -e "${RED}The 'google-drive' remote is not configured in rclone.${NC}"
-            echo -e "Run 'rclone config' to set up the Google Drive remote."
-            go_back
+            echo -e "${YELLOW}The 'google-drive' remote is not configured in rclone.${NC}"
+            echo -e "${WHITE}Running 'rclone config' to set up the Google Drive remote...${NC}"
+
+            # Run rclone config to allow the user to configure Google Drive
+            rclone config
+
+            # Verify if the configuration was successful
+            if ! rclone listremotes | grep -q "google-drive:"; then
+                echo -e "${RED}Failed to configure 'google-drive' remote. Please try again.${NC}"
+                go_back
+            fi
         fi
 
         echo -e "${WHITE}Google Drive backup selected. Proceeding with setup...${NC}"
