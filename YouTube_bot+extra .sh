@@ -191,14 +191,14 @@ download_channel() {
         echo -e "${BLUE}Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):${NC}"
         read -p "> " channel_id
 
-        # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
+        # Validate Channel ID
         if [[ ! "$channel_id" =~ ^UC[a-zA-Z0-9_-]+$ ]]; then
             ((retries--))
             echo -e "${RED}Invalid Channel ID. $retries attempts remaining.${NC}"
             continue
         fi
 
-        # Construct the channel URL using the provided Channel ID
+        # Construct the channel URL
         channel_url="https://www.youtube.com/channel/$channel_id"
 
         # Attempt to fetch the channel name
@@ -222,6 +222,10 @@ download_channel() {
         break
     done
 
+    # Define local storage folder
+    channel_folder="$HOME/YouTube_Channel_Backups/$channel_name"
+    mkdir -p "$channel_folder"
+
     echo -e "${WHITE}Choose the type of content to download:${NC}"
     echo -e "${WHITE}1. Shorts${NC}"
     echo -e "${WHITE}2. Videos (Filter by duration)${NC}"
@@ -229,11 +233,20 @@ download_channel() {
     read -p "Enter your choice (1, 2, or 3): " content_type
 
     case $content_type in
-    1 | 2 | 3)
-        # Download Shorts, Videos, or Playlists
-        echo -e "${WHITE}Downloading content from the channel...${NC}"
+    1)
+        echo -e "${WHITE}Downloading Shorts...${NC}"
         yt-dlp --continue --yes-playlist --match-filter "duration < 60" -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
-            -o "-" "$channel_url" | upload_to_cloud "$remote_name:/YouTube_Channel_Backups/$channel_name"
+            -o "$channel_folder/%(upload_date)s - %(title)s.%(ext)s" "$channel_url"
+        ;;
+    2)
+        echo -e "${WHITE}Downloading Videos (Filtered by duration)...${NC}"
+        yt-dlp --continue --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
+            -o "$channel_folder/%(upload_date)s - %(title)s.%(ext)s" "$channel_url"
+        ;;
+    3)
+        echo -e "${WHITE}Downloading Playlists...${NC}"
+        yt-dlp --continue --yes-playlist -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
+            -o "$channel_folder/%(upload_date)s - %(playlist)s - %(title)s.%(ext)s" "$channel_url"
         ;;
     *)
         echo -e "${RED}Invalid choice. Restarting...${NC}"
@@ -242,9 +255,9 @@ download_channel() {
         ;;
     esac
 
-    # Confirm the upload location
+    # Upload if cloud storage is selected
     if [[ $save_option == "2" ]]; then
-        echo -e "${WHITE}Content uploaded directly to: $remote_name:/YouTube_Channel_Backups/$channel_name${NC}"
+        upload_to_cloud "$channel_folder" "$remote_name:/YouTube_Channel_Backups/$channel_name"
     else
         echo -e "${WHITE}Content saved locally in: $channel_folder${NC}"
     fi
@@ -254,11 +267,13 @@ download_channel() {
 
 # Function to upload content to cloud storage with rate-limiting and retries
 upload_to_cloud() {
-    local destination="$1"
+    local source="$1"
+    local destination="$2"
     retries=3
+
     while [[ $retries -gt 0 ]]; do
         echo -e "${WHITE}Uploading content to cloud storage...${NC}"
-        if rclone rcat "$destination" --progress; then
+        if rclone copy "$source" "$destination" --progress; then
             echo -e "${WHITE}Upload completed successfully!${NC}"
             return 0
         else
