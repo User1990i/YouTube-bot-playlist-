@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# YouTube Downloader Bot - Version 1.12
-script_version="1.12"
+# YouTube Downloader Bot - Version 1.13
+script_version="1.13"
 
 # Define output directories (No spaces in paths)
 base_dir="/storage/emulated/0/Music_Vids"
@@ -21,11 +21,11 @@ sanitize_folder_name() {
     echo "${sanitized^}"  # Capitalize the first letter and trim to 50 characters
 }
 
-# Color Scheme for YouTube Red, White, and Light Blue
+# Color Scheme for Blood Red Banners, Bold Blue Headings, and White Subtext
 RED='\033[0;31m'
-WHITE='\033[1;37m'
-BLUE='\033[0;36m'
-NC='\033[0m'  # No color
+BLUE='\033[1;34m'  # Bold blue for headings
+WHITE='\033[1;37m' # Bold white for subtext
+NC='\033[0m'       # No color
 
 # Show banner with ASCII art
 show_banner() {
@@ -99,10 +99,10 @@ validate_youtube_link() {
 # Function to download audio
 download_audio() {
     show_banner
-    echo -e "${WHITE}You selected to download audio.${NC}"
-    echo "Choose the audio format:"
-    echo "1. FLAC"
-    echo "2. MP3"
+    echo -e "${BLUE}Downloading Audio${NC}"
+    echo -e "${WHITE}Choose the audio format:${NC}"
+    echo -e "${WHITE}1. FLAC${NC}"
+    echo -e "${WHITE}2. MP3${NC}"
     read -p "Enter your choice (1 or 2): " audio_format_choice
 
     case $audio_format_choice in
@@ -115,7 +115,7 @@ download_audio() {
         ;;
     esac
 
-    echo -e "Paste a YouTube link and press Enter to download the song."
+    echo -e "${WHITE}Paste a YouTube link and press Enter to download the song.${NC}"
     while true; do
         read -p "> " youtube_link
         if validate_youtube_link "$youtube_link"; then
@@ -138,10 +138,10 @@ download_audio() {
 # Function to download video
 download_video() {
     show_banner
-    echo -e "${WHITE}You selected to download video.${NC}"
-    echo -e "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
+    echo -e "${BLUE}Downloading Video${NC}"
+    echo -e "${WHITE}Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best${NC}"
     read -p "Enter your preferred quality (e.g., 720p, best): " quality
-    echo -e "Would you like to include subtitles? (y/n)"
+    echo -e "${WHITE}Would you like to include subtitles? (y/n)${NC}"
     read -p "> " include_subtitles
 
     if [[ $include_subtitles == "y" || $include_subtitles == "Y" ]]; then
@@ -150,7 +150,7 @@ download_video() {
         subtitle_flag=""
     fi
 
-    echo -e "Paste a YouTube link and press Enter to download the video."
+    echo -e "${WHITE}Paste a YouTube link and press Enter to download the video.${NC}"
     while true; do
         read -p "> " youtube_link
         if validate_youtube_link "$youtube_link"; then
@@ -173,17 +173,17 @@ download_video() {
 # Function to download playlist
 download_playlist() {
     show_banner
-    echo -e "${WHITE}Downloading a playlist.${NC}"
-    echo "Choose the type of content to download:"
-    echo "1. Audio (FLAC or MP3)"
-    echo "2. Video (choose quality)"
+    echo -e "${BLUE}Downloading Playlist${NC}"
+    echo -e "${WHITE}Choose the type of content to download:${NC}"
+    echo -e "${WHITE}1. Audio (FLAC or MP3)${NC}"
+    echo -e "${WHITE}2. Video (choose quality)${NC}"
     read -p "Enter your choice (1 or 2): " playlist_choice
 
     if [[ $playlist_choice == "1" ]]; then
         # Audio download
-        echo "Choose the audio format:"
-        echo "1. FLAC"
-        echo "2. MP3"
+        echo -e "${WHITE}Choose the audio format:${NC}"
+        echo -e "${WHITE}1. FLAC${NC}"
+        echo -e "${WHITE}2. MP3${NC}"
         read -p "Enter your choice (1 or 2): " audio_format_choice
 
         case $audio_format_choice in
@@ -197,9 +197,9 @@ download_playlist() {
         esac
     elif [[ $playlist_choice == "2" ]]; then
         # Video download
-        echo "Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best"
+        echo -e "${WHITE}Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best${NC}"
         read -p "Enter your preferred quality (e.g., 720p, best): " quality
-        echo -e "Would you like to include subtitles? (y/n)"
+        echo -e "${WHITE}Would you like to include subtitles? (y/n)${NC}"
         read -p "> " include_subtitles
 
         if [[ $include_subtitles == "y" || $include_subtitles == "Y" ]]; then
@@ -213,7 +213,7 @@ download_playlist() {
         return
     fi
 
-    echo "Paste a YouTube playlist link."
+    echo -e "${WHITE}Paste a YouTube playlist link.${NC}"
     read -p "> " playlist_link
 
     if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
@@ -255,38 +255,14 @@ download_playlist() {
 # Function to download channel content
 download_channel() {
     show_banner
-    echo -e "${WHITE}Downloading YouTube channel content.${NC}"
-
-    # Prompt for local or cloud backup BEFORE downloading
-    echo -e "Where would you like to save the downloaded content?"
-    echo -e "${BLUE}1. Save Locally${NC}"
-    echo -e "${BLUE}2. Backup to Google Drive${NC}"
+    echo -e "${BLUE}Downloading YouTube Channel Content${NC}"
+    echo -e "${WHITE}Where would you like to save the downloaded content?${NC}"
+    echo -e "${WHITE}1. Save Locally${NC}"
+    echo -e "${WHITE}2. Backup to Cloud Storage${NC}"
     read -p "Enter your choice (1 or 2): " save_option
 
     if [[ $save_option == "2" ]]; then
-        # Check if rclone is installed
-        if ! command -v rclone &> /dev/null; then
-            echo -e "${RED}rclone is not installed. Installing rclone now...${NC}"
-            sudo apt update
-            sudo apt install rclone -y
-        fi
-
-        # Check if 'google-drive' remote exists in rclone config
-        if ! rclone listremotes | grep -q "google-drive:"; then
-            echo -e "${YELLOW}The 'google-drive' remote is not configured in rclone.${NC}"
-            echo -e "${WHITE}Running 'rclone config' to set up the Google Drive remote...${NC}"
-
-            # Run rclone config to allow the user to configure Google Drive
-            rclone config
-
-            # Verify if the configuration was successful
-            if ! rclone listremotes | grep -q "google-drive:"; then
-                echo -e "${RED}Failed to configure 'google-drive' remote. Please try again.${NC}"
-                go_back
-            fi
-        fi
-
-        echo -e "${WHITE}Google Drive backup selected. Proceeding with setup...${NC}"
+        manage_cloud_storage
     else
         echo -e "${WHITE}Local storage selected. Content will be saved locally.${NC}"
     fi
@@ -311,10 +287,10 @@ download_channel() {
         channel_name=$(yt-dlp --get-filename -o "%(uploader)s" "$channel_url" 2>/dev/null)
         if [[ -z "$channel_name" ]]; then
             echo -e "${RED}Failed to fetch channel name. Please ensure the Channel ID is correct.${NC}"
-            echo -e "Would you like to manually enter the channel name? (y/n)"
+            echo -e "${WHITE}Would you like to manually enter the channel name? (y/n)${NC}"
             read -p "> " manual_input
             if [[ "$manual_input" == "y" || "$manual_input" == "Y" ]]; then
-                echo -e "Enter the channel name manually:"
+                echo -e "${WHITE}Enter the channel name manually:${NC}"
                 read -p "> " channel_name
                 channel_name=$(sanitize_folder_name "$channel_name")
             else
@@ -332,10 +308,10 @@ download_channel() {
         break
     done
 
-    echo -e "Choose the type of content to download:"
-    echo -e "${BLUE}1. Shorts${NC}"
-    echo -e "${BLUE}2. Videos (Filter by duration)${NC}"
-    echo -e "${BLUE}3. Playlists Only${NC}"
+    echo -e "${WHITE}Choose the type of content to download:${NC}"
+    echo -e "${WHITE}1. Shorts${NC}"
+    echo -e "${WHITE}2. Videos (Filter by duration)${NC}"
+    echo -e "${WHITE}3. Playlists Only${NC}"
     read -p "Enter your choice (1, 2, or 3): " content_type
 
     case $content_type in
@@ -346,10 +322,10 @@ download_channel() {
         ;;
     2)
         # Download Videos with duration filter
-        echo -e "Filter videos by duration:"
-        echo -e "${BLUE}1. All videos${NC}"
-        echo -e "${BLUE}2. Videos longer than 1 hour${NC}"
-        echo -e "${BLUE}3. Videos shorter than 30 minutes${NC}"
+        echo -e "${WHITE}Filter videos by duration:${NC}"
+        echo -e "${WHITE}1. All videos${NC}"
+        echo -e "${WHITE}2. Videos longer than 1 hour${NC}"
+        echo -e "${WHITE}3. Videos shorter than 30 minutes${NC}"
         read -p "Enter your choice (1, 2, or 3): " duration_filter
 
         case $duration_filter in
@@ -386,14 +362,14 @@ download_channel() {
         ;;
     esac
 
-    # If Google Drive backup was selected, upload content
+    # If Cloud Storage backup was selected, upload content
     if [[ $save_option == "2" ]]; then
-        echo -e "${WHITE}Uploading to Google Drive...${NC}"
-        rclone copy "$channel_folder" "google-drive:/YouTube_Channel_Backups/$channel_name" --progress
+        echo -e "${WHITE}Uploading to Cloud Storage...${NC}"
+        rclone copy "$channel_folder" "$remote_name:/YouTube_Channel_Backups/$channel_name" --progress
         if [ $? -eq 0 ]; then
-            echo -e "${WHITE}Upload to Google Drive completed successfully!${NC}"
+            echo -e "${WHITE}Upload to Cloud Storage completed successfully!${NC}"
         else
-            echo -e "${RED}An error occurred while uploading to Google Drive.${NC}"
+            echo -e "${RED}An error occurred while uploading to Cloud Storage.${NC}"
         fi
     else
         echo -e "${WHITE}Content saved locally in: $channel_folder${NC}"
@@ -404,5 +380,90 @@ download_channel() {
     go_back
 }
 
-# Start script
-main_menu
+# Function to manage cloud storage
+manage_cloud_storage() {
+    echo -e "${BLUE}Manage Cloud Storage:${NC}"
+    echo -e "${WHITE}1. Add New Cloud Storage${NC}"
+    echo -e "${WHITE}2. Delete Existing Cloud Storage${NC}"
+    echo -e "${WHITE}3. Use Existing Cloud Storage${NC}"
+    read -p "Enter your choice (1, 2, or 3): " cloud_choice
+
+    case $cloud_choice in
+    1)
+        add_cloud_storage
+        ;;
+    2)
+        delete_cloud_storage
+        ;;
+    3)
+        use_existing_cloud_storage
+        ;;
+    *)
+        echo -e "${RED}Invalid choice. Returning to the main menu.${NC}"
+        go_back
+        ;;
+    esac
+}
+
+# Function to add new cloud storage
+add_cloud_storage() {
+    echo -e "${WHITE}Adding a new cloud storage...${NC}"
+    echo -e "${WHITE}Which cloud storage service would you like to use?${NC}"
+    echo -e "${WHITE}1. Google Drive${NC}"
+    echo -e "${WHITE}2. Dropbox${NC}"
+    echo -e "${WHITE}3. Other (Custom)${NC}"
+    read -p "Enter your choice (1, 2, or 3): " storage_choice
+
+    case $storage_choice in
+    1) storage_type="drive" ;;
+    2) storage_type="dropbox" ;;
+    3) 
+        echo -e "${WHITE}Enter the custom storage type (e.g., s3, onedrive):${NC}"
+        read -p "> " storage_type
+        ;;
+    *) 
+        echo -e "${RED}Invalid choice. Returning to the main menu.${NC}"
+        go_back
+        ;;
+    esac
+
+    echo -e "${WHITE}Enter a name for this cloud storage (e.g., google-drive):${NC}"
+    read -p "> " remote_name
+
+    echo -e "${WHITE}Setting up $remote_name as $storage_type...${NC}"
+    rclone config create "$remote_name" "$storage_type"
+
+    echo -e "${WHITE}Authentication required. Opening browser for login...${NC}"
+    rclone config reconnect "$remote_name"
+
+    echo -e "${WHITE}Cloud storage '$remote_name' added successfully!${NC}"
+}
+
+# Function to delete existing cloud storage
+delete_cloud_storage() {
+    echo -e "${WHITE}Deleting existing cloud storage...${NC}"
+    echo -e "${WHITE}Available cloud storages:${NC}"
+    rclone listremotes
+    echo -e "${WHITE}Enter the name of the cloud storage to delete:${NC}"
+    read -p "> " remote_name
+
+    echo -e "${WHITE}Deleting '$remote_name'...${NC}"
+    rclone config delete "$remote_name"
+    echo -e "${WHITE}Cloud storage '$remote_name' deleted successfully!${NC}"
+}
+
+# Function to use existing cloud storage
+use_existing_cloud_storage() {
+    echo -e "${WHITE}Using existing cloud storage...${NC}"
+    echo -e "${WHITE}Available cloud storages:${NC}"
+    rclone listremotes
+    echo -e "${WHITE}Enter the name of the cloud storage to use:${NC}"
+    read -p "> " remote_name
+
+    if rclone listremotes | grep -q "$remote_name"; then
+        echo -e "${WHITE}Selected cloud storage: $remote_name${NC}"
+    else
+        echo -e "${RED}Cloud storage '$remote_name' not found. Please try again.${NC}"
+        manage_cloud_storage
+    fi
+}
