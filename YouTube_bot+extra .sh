@@ -256,10 +256,38 @@ download_playlist() {
 download_channel() {
     show_banner
     echo -e "${WHITE}Downloading YouTube channel content.${NC}"
-    echo -e "${BLUE}Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):${NC}"
-    
+
+    # Prompt for local or cloud backup BEFORE downloading
+    echo -e "Where would you like to save the downloaded content?"
+    echo -e "${BLUE}1. Save Locally${NC}"
+    echo -e "${BLUE}2. Backup to Google Drive${NC}"
+    read -p "Enter your choice (1 or 2): " save_option
+
+    if [[ $save_option == "2" ]]; then
+        # Check if rclone is installed and configured
+        if ! command -v rclone &> /dev/null; then
+            echo -e "${RED}rclone is not installed. Please install and configure rclone first.${NC}"
+            echo -e "Install rclone with: sudo apt install rclone"
+            echo -e "Configure rclone with: rclone config"
+            go_back
+        fi
+
+        # Check if 'google-drive' remote exists in rclone config
+        if ! rclone listremotes | grep -q "google-drive:"; then
+            echo -e "${RED}The 'google-drive' remote is not configured in rclone.${NC}"
+            echo -e "Run 'rclone config' to set up the Google Drive remote."
+            go_back
+        fi
+
+        echo -e "${WHITE}Google Drive backup selected. Proceeding with setup...${NC}"
+    else
+        echo -e "${WHITE}Local storage selected. Content will be saved locally.${NC}"
+    fi
+
+    # Prompt for YouTube Channel ID
     retries=3
     while [[ $retries -gt 0 ]]; do
+        echo -e "${BLUE}Enter the **YouTube Channel ID** (alphanumeric string starting with 'UC'):${NC}"
         read -p "> " channel_id
 
         # Validate Channel ID (must start with 'UC' and contain only alphanumeric characters, dashes, or underscores)
@@ -294,52 +322,41 @@ download_channel() {
         channel_folder="$channel_dir/$channel_name"
         mkdir -p "$channel_folder"
 
-        echo -e "Choose the type of content to download:"
-        echo -e "${BLUE}1. Shorts${NC}"
-        echo -e "${BLUE}2. Videos (Filter by duration)${NC}"
-        echo -e "${BLUE}3. Playlists Only${NC}"
-        read -p "Enter your choice (1, 2, or 3): " content_type
+        break
+    done
 
-        case $content_type in
+    echo -e "Choose the type of content to download:"
+    echo -e "${BLUE}1. Shorts${NC}"
+    echo -e "${BLUE}2. Videos (Filter by duration)${NC}"
+    echo -e "${BLUE}3. Playlists Only${NC}"
+    read -p "Enter your choice (1, 2, or 3): " content_type
+
+    case $content_type in
+    1)
+        # Download Shorts
+        echo -e "${WHITE}Downloading Shorts from the channel...${NC}"
+        yt-dlp --continue --match-filter "duration < 60" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+        ;;
+    2)
+        # Download Videos with duration filter
+        echo -e "Filter videos by duration:"
+        echo -e "${BLUE}1. All videos${NC}"
+        echo -e "${BLUE}2. Videos longer than 1 hour${NC}"
+        echo -e "${BLUE}3. Videos shorter than 30 minutes${NC}"
+        read -p "Enter your choice (1, 2, or 3): " duration_filter
+
+        case $duration_filter in
         1)
-            # Download Shorts
-            echo -e "${WHITE}Downloading Shorts from the channel...${NC}"
-            yt-dlp --continue --match-filter "duration < 60" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            match_filter=""
+            echo -e "${WHITE}Downloading all videos from the channel...${NC}"
             ;;
         2)
-            # Download Videos with duration filter
-            echo -e "Filter videos by duration:"
-            echo -e "${BLUE}1. All videos${NC}"
-            echo -e "${BLUE}2. Videos longer than 1 hour${NC}"
-            echo -e "${BLUE}3. Videos shorter than 30 minutes${NC}"
-            read -p "Enter your choice (1, 2, or 3): " duration_filter
-
-            case $duration_filter in
-            1)
-                match_filter=""
-                echo -e "${WHITE}Downloading all videos from the channel...${NC}"
-                ;;
-            2)
-                match_filter="duration > 3600"
-                echo -e "${WHITE}Downloading videos longer than 1 hour from the channel...${NC}"
-                ;;
-            3)
-                match_filter="duration < 1800"
-                echo -e "${WHITE}Downloading videos shorter than 30 minutes from the channel...${NC}"
-                ;;
-            *)
-                echo -e "${RED}Invalid choice. Restarting...${NC}"
-                download_channel
-                return
-                ;;
-            esac
-
-            yt-dlp --continue --match-filter "$match_filter" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+            match_filter="duration > 3600"
+            echo -e "${WHITE}Downloading videos longer than 1 hour from the channel...${NC}"
             ;;
         3)
-            # Download Playlists Only
-            echo -e "${WHITE}Downloading playlists from the channel...${NC}"
-            yt-dlp --continue --flat-playlist --yes-playlist -o "$channel_folder/%(playlist_title)s/%(title)s.%(ext)s" "$channel_url"
+            match_filter="duration < 1800"
+            echo -e "${WHITE}Downloading videos shorter than 30 minutes from the channel...${NC}"
             ;;
         *)
             echo -e "${RED}Invalid choice. Restarting...${NC}"
@@ -348,36 +365,35 @@ download_channel() {
             ;;
         esac
 
-        # Save locally or upload to Google Drive
-        echo -e "Where would you like to save the downloaded content?"
-        echo -e "${BLUE}1. Save Locally${NC}"
-        echo -e "${BLUE}2. Backup to Google Drive${NC}"
-        read -p "Enter your choice (1 or 2): " save_option
+        yt-dlp --continue --match-filter "$match_filter" -f "bestvideo+bestaudio/best" --merge-output-format mp4 -o "$channel_folder/%(title)s.%(ext)s" "$channel_url"
+        ;;
+    3)
+        # Download Playlists Only
+        echo -e "${WHITE}Downloading playlists from the channel...${NC}"
+        yt-dlp --continue --flat-playlist --yes-playlist -o "$channel_folder/%(playlist_title)s/%(title)s.%(ext)s" "$channel_url"
+        ;;
+    *)
+        echo -e "${RED}Invalid choice. Restarting...${NC}"
+        download_channel
+        return
+        ;;
+    esac
 
-        if [[ $save_option == "2" ]]; then
-            # Check if rclone is installed and configured
-            if ! command -v rclone &> /dev/null; then
-                echo -e "${RED}rclone is not installed. Please install and configure rclone first.${NC}"
-                echo -e "Install rclone with: sudo apt install rclone"
-                echo -e "Configure rclone with: rclone config"
-                go_back
-            fi
-
-            echo -e "${WHITE}Uploading to Google Drive...${NC}"
-            rclone copy "$channel_folder" "google-drive:/YouTube_Channel_Backups/$channel_name" --progress
-            if [ $? -eq 0 ]; then
-                echo -e "${WHITE}Upload to Google Drive completed successfully!${NC}"
-            else
-                echo -e "${RED}An error occurred while uploading to Google Drive.${NC}"
-            fi
+    # If Google Drive backup was selected, upload content
+    if [[ $save_option == "2" ]]; then
+        echo -e "${WHITE}Uploading to Google Drive...${NC}"
+        rclone copy "$channel_folder" "google-drive:/YouTube_Channel_Backups/$channel_name" --progress
+        if [ $? -eq 0 ]; then
+            echo -e "${WHITE}Upload to Google Drive completed successfully!${NC}"
         else
-            echo -e "${WHITE}Content saved locally in: $channel_folder${NC}"
+            echo -e "${RED}An error occurred while uploading to Google Drive.${NC}"
         fi
+    else
+        echo -e "${WHITE}Content saved locally in: $channel_folder${NC}"
+    fi
 
-        # Confirm the download location
-        echo -e "${WHITE}Content downloaded to: $channel_folder${NC}"
-        break
-    done
+    # Confirm the download location
+    echo -e "${WHITE}Content downloaded to: $channel_folder${NC}"
     go_back
 }
 
