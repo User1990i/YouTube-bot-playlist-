@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # YouTube Downloader Bot - Version 1.13
-script_version="1.14"
+script_version="1.15"
 
 # Define output directories (No spaces in paths)
 base_dir="/storage/emulated/0/Music_Vids"
@@ -170,89 +170,7 @@ download_video() {
     go_back
 }
 
-# Function to download playlist (continued)
-download_playlist() {
-    show_banner
-    echo -e "${BLUE}Downloading Playlist${NC}"
-    echo -e "${WHITE}Choose the type of content to download:${NC}"
-    echo -e "${WHITE}1. Audio (FLAC or MP3)${NC}"
-    echo -e "${WHITE}2. Video (choose quality)${NC}"
-    read -p "Enter your choice (1 or 2): " playlist_choice
-
-    if [[ $playlist_choice == "1" ]]; then
-        # Audio download
-        echo -e "${WHITE}Choose the audio format:${NC}"
-        echo -e "${WHITE}1. FLAC${NC}"
-        echo -e "${WHITE}2. MP3${NC}"
-        read -p "Enter your choice (1 or 2): " audio_format_choice
-
-        case $audio_format_choice in
-        1) audio_format="flac" ;;
-        2) audio_format="mp3" ;;
-        *) 
-            echo -e "${RED}Invalid choice. Restarting...${NC}"
-            download_playlist
-            return
-            ;;
-        esac
-    elif [[ $playlist_choice == "2" ]]; then
-        # Video download
-        echo -e "${WHITE}Available qualities: 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p (4K), best${NC}"
-        read -p "Enter your preferred quality (e.g., 720p, best): " quality
-        echo -e "${WHITE}Would you like to include subtitles? (y/n)${NC}"
-        read -p "> " include_subtitles
-
-        if [[ $include_subtitles == "y" || $include_subtitles == "Y" ]]; then
-            subtitle_flag="--write-sub --sub-lang en"
-        else
-            subtitle_flag=""
-        fi
-    else
-        echo -e "${RED}Invalid choice. Restarting...${NC}"
-        download_playlist
-        return
-    fi
-
-    echo -e "${WHITE}Paste a YouTube playlist link.${NC}"
-    read -p "> " playlist_link
-
-    if [[ $playlist_link == *"youtube.com/playlist"* ]]; then
-        echo -e "${WHITE}Fetching playlist metadata...${NC}"
-        
-        # Extract playlist name safely
-        playlist_name=$(yt-dlp --get-title "$playlist_link" 2>/dev/null | head -n 1)
-        if [[ -z "$playlist_name" ]]; then
-            echo -e "${RED}Failed to fetch playlist metadata. Please check the link.${NC}"
-            go_back
-        fi
-
-        playlist_name=$(sanitize_folder_name "$playlist_name")
-        playlist_folder="$playlist_dir/$playlist_name"
-        mkdir -p "$playlist_folder"
-        echo -e "${WHITE}Playlist folder created: $playlist_folder${NC}"
-
-        # Permission check before writing logs
-        if [[ ! -w "$playlist_folder" ]]; then
-            echo -e "${RED}Error: No write permission for $playlist_folder${NC}"
-            go_back
-        fi
-
-        if [[ $playlist_choice == "1" ]]; then
-            echo -e "${WHITE}Downloading playlist as ${audio_format^^}...${NC}"
-            yt-dlp --continue --yes-playlist -x --audio-format "$audio_format" --audio-quality 0 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
-                2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
-        elif [[ $playlist_choice == "2" ]]; then
-            echo -e "${WHITE}Downloading playlist as MP4 in $quality quality...${NC}"
-            yt-dlp --continue --yes-playlist $subtitle_flag -f "bestvideo[height<=$quality]+bestaudio/best[height<=$quality]" --merge-output-format mp4 -o "$playlist_folder/%(title)s.%(ext)s" "$playlist_link" \
-                2> "$playlist_folder/error_log.txt" | tee -a "$playlist_folder/download_log.txt"
-        fi
-    else
-        echo -e "${RED}Invalid playlist link.${NC}"
-        go_back
-    fi
-}
-
-# Function to download channel content (direct upload to cloud storage)
+# Function to download channel content (direct upload to cloud storage with rate-limiting)
 download_channel() {
     show_banner
     echo -e "${BLUE}Downloading YouTube Channel Content${NC}"
@@ -311,47 +229,11 @@ download_channel() {
     read -p "Enter your choice (1, 2, or 3): " content_type
 
     case $content_type in
-    1)
-        # Download Shorts
-        echo -e "${WHITE}Downloading Shorts from the channel...${NC}"
-        yt-dlp --continue --match-filter "duration < 60" -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
-            -o "-" "$channel_url" | rclone rcat "$remote_name:/YouTube_Channel_Backups/$channel_name/shorts.mp4"
-        ;;
-    2)
-        # Download Videos with duration filter
-        echo -e "${WHITE}Filter videos by duration:${NC}"
-        echo -e "${WHITE}1. All videos${NC}"
-        echo -e "${WHITE}2. Videos longer than 1 hour${NC}"
-        echo -e "${WHITE}3. Videos shorter than 30 minutes${NC}"
-        read -p "Enter your choice (1, 2, or 3): " duration_filter
-
-        case $duration_filter in
-        1)
-            match_filter=""
-            echo -e "${WHITE}Downloading all videos from the channel...${NC}"
-            ;;
-        2)
-            match_filter="duration > 3600"
-            echo -e "${WHITE}Downloading videos longer than 1 hour from the channel...${NC}"
-            ;;
-        3)
-            match_filter="duration < 1800"
-            echo -e "${WHITE}Downloading videos shorter than 30 minutes from the channel...${NC}"
-            ;;
-        *)
-            echo -e "${RED}Invalid choice. Restarting...${NC}"
-            download_channel
-            return
-            ;;
-        esac
-
-        yt-dlp --continue --match-filter "$match_filter" -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
-            -o "-" "$channel_url" | rclone rcat "$remote_name:/YouTube_Channel_Backups/$channel_name/videos.mp4"
-        ;;
-    3)
-        # Download Playlists Only
-        echo -e "${WHITE}Downloading playlists from the channel...${NC}"
-        yt-dlp --continue --flat-playlist --yes-playlist -o "-" "$channel_url" | rclone rcat "$remote_name:/YouTube_Channel_Backups/$channel_name/playlists.mp4"
+    1 | 2 | 3)
+        # Download Shorts, Videos, or Playlists
+        echo -e "${WHITE}Downloading content from the channel...${NC}"
+        yt-dlp --continue --yes-playlist --match-filter "duration < 60" -f "bestvideo+bestaudio/best" --merge-output-format mp4 \
+            -o "-" "$channel_url" | upload_to_cloud "$remote_name:/YouTube_Channel_Backups/$channel_name"
         ;;
     *)
         echo -e "${RED}Invalid choice. Restarting...${NC}"
@@ -368,6 +250,27 @@ download_channel() {
     fi
 
     go_back
+}
+
+# Function to upload content to cloud storage with rate-limiting and retries
+upload_to_cloud() {
+    local destination="$1"
+    retries=3
+    while [[ $retries -gt 0 ]]; do
+        echo -e "${WHITE}Uploading content to cloud storage...${NC}"
+        if rclone rcat "$destination" --progress; then
+            echo -e "${WHITE}Upload completed successfully!${NC}"
+            return 0
+        else
+            echo -e "${RED}Upload failed. Retrying in 10 seconds... ($retries attempts remaining)${NC}"
+            sleep 10
+            ((retries--))
+        fi
+    done
+
+    echo -e "${RED}Upload failed after multiple attempts. Please check your internet connection or quota limits.${NC}"
+    echo -e "${WHITE}You can request a higher quota limit here: https://cloud.google.com/docs/quotas/help/request_increase${NC}"
+    return 1
 }
 
 # Function to manage cloud storage
